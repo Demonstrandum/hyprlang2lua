@@ -4,33 +4,46 @@
 #include <cctype>
 #include <cmath>
 #include <format>
-#include <set>
+#include <ranges>
+
+#include <hyprutils/memory/SharedPtr.hpp>
 
 using namespace H2L;
+using namespace Hyprutils::Memory;
 
-static const std::set<std::string> LUA_KEYWORDS = {
-    "and",  "break", "do",     "else",   "elseif", "end",  "false", "for",  "function", "goto",  "if",
-    "in",   "local", "nil",    "not",    "or",     "repeat", "return", "then", "true",   "until", "while",
+static constexpr std::string_view LUA_KEYWORDS[] = {
+    "and", "break",  "do",     "else", "elseif", "end",   "false", "for",  "function", "goto",  "if",
+    "in",  "local",  "nil",    "not",  "or",     "repeat", "return", "then", "true",   "until", "while",
 };
 
-// a table renders on one line while it stays under this width
-static constexpr size_t INLINE_WIDTH = 96;
-static const std::string INDENT      = "    ";
+static constexpr size_t           INLINE_WIDTH = 96;
+static constexpr std::string_view INDENT       = "    ";
 
-bool H2L::isLuaIdentifier(const std::string& s) {
-    if (s.empty())
-        return false;
-    if (std::isalpha(static_cast<unsigned char>(s[0])) == 0 && s[0] != '_')
-        return false;
-    for (const auto& c : s) {
-        if (std::isalnum(static_cast<unsigned char>(c)) == 0 && c != '_')
-            return false;
-    }
-    return !LUA_KEYWORDS.contains(s);
+static std::string                pad(size_t level) {
+    std::string out;
+    out.reserve(level * INDENT.size());
+    for (size_t i = 0; i < level; ++i)
+        out += INDENT;
+    return out;
 }
 
-std::string H2L::quoteLuaString(const std::string& s) {
+bool H2L::isLuaIdentifier(std::string_view s) {
+    if (s.empty())
+        return false;
+
+    if (std::isalpha(static_cast<unsigned char>(s.front())) == 0 && s.front() != '_')
+        return false;
+
+    if (!std::ranges::all_of(s, [](char c) { return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_'; }))
+        return false;
+
+    return !std::ranges::contains(LUA_KEYWORDS, s);
+}
+
+std::string H2L::quoteLuaString(std::string_view s) {
     std::string out = "\"";
+    out.reserve(s.size() + 2);
+
     for (const auto& c : s) {
         switch (c) {
             case '\\': out += "\\\\"; break;
@@ -41,6 +54,7 @@ std::string H2L::quoteLuaString(const std::string& s) {
             default: out += c; break;
         }
     }
+
     return out + "\"";
 }
 
@@ -48,34 +62,32 @@ std::string H2L::formatLuaNumber(double d, bool isInteger) {
     if (isInteger || d == std::floor(d))
         return std::format("{}", static_cast<int64_t>(d));
 
-    auto out = std::format("{}", d);
-    return out;
+    return std::format("{}", d);
 }
 
-PLuaValue CLuaValue::raw(const std::string& src) {
-    auto v      = std::make_shared<CLuaValue>();
+PLuaValue CLuaValue::raw(std::string_view src) {
+    auto v      = makeShared<CLuaValue>();
     v->m_type   = LUA_VALUE_RAW;
     v->m_string = src;
     return v;
 }
 
-PLuaValue CLuaValue::string(const std::string& s) {
-    auto v      = std::make_shared<CLuaValue>();
+PLuaValue CLuaValue::string(std::string_view s) {
+    auto v      = makeShared<CLuaValue>();
     v->m_type   = LUA_VALUE_STRING;
     v->m_string = s;
     return v;
 }
 
 PLuaValue CLuaValue::number(double d) {
-    auto v       = std::make_shared<CLuaValue>();
-    v->m_type    = LUA_VALUE_NUMBER;
-    v->m_number  = d;
-    v->m_integer = false;
+    auto v      = makeShared<CLuaValue>();
+    v->m_type   = LUA_VALUE_NUMBER;
+    v->m_number = d;
     return v;
 }
 
 PLuaValue CLuaValue::integer(int64_t i) {
-    auto v       = std::make_shared<CLuaValue>();
+    auto v       = makeShared<CLuaValue>();
     v->m_type    = LUA_VALUE_NUMBER;
     v->m_number  = static_cast<double>(i);
     v->m_integer = true;
@@ -83,20 +95,20 @@ PLuaValue CLuaValue::integer(int64_t i) {
 }
 
 PLuaValue CLuaValue::boolean(bool b) {
-    auto v    = std::make_shared<CLuaValue>();
+    auto v    = makeShared<CLuaValue>();
     v->m_type = LUA_VALUE_BOOL;
     v->m_bool = b;
     return v;
 }
 
 PLuaValue CLuaValue::array() {
-    auto v    = std::make_shared<CLuaValue>();
+    auto v    = makeShared<CLuaValue>();
     v->m_type = LUA_VALUE_ARRAY;
     return v;
 }
 
 PLuaValue CLuaValue::table() {
-    auto v    = std::make_shared<CLuaValue>();
+    auto v    = makeShared<CLuaValue>();
     v->m_type = LUA_VALUE_TABLE;
     return v;
 }
@@ -105,79 +117,65 @@ eLuaValueType CLuaValue::type() const {
     return m_type;
 }
 
-CLuaValue& CLuaValue::push(PLuaValue v) {
-    m_array.emplace_back(std::move(v));
+CLuaValue& CLuaValue::push(PLuaValue value) {
+    m_array.emplace_back(std::move(value));
     return *this;
 }
 
-CLuaValue& CLuaValue::set(const std::string& key, PLuaValue v) {
-    for (auto& [k, val] : m_table) {
-        if (k != key)
-            continue;
-        val = std::move(v);
+CLuaValue& CLuaValue::set(std::string_view key, PLuaValue value) {
+    const auto IT = std::ranges::find(m_table, key, &std::pair<std::string, PLuaValue>::first);
+
+    if (IT != m_table.end()) {
+        IT->second = std::move(value);
         return *this;
     }
 
-    m_table.emplace_back(key, std::move(v));
+    m_table.emplace_back(std::string{key}, std::move(value));
     return *this;
 }
 
-bool CLuaValue::has(const std::string& key) const {
-    return std::ranges::any_of(m_table, [&key](const auto& e) { return e.first == key; });
+PLuaValue CLuaValue::get(std::string_view key) const {
+    const auto IT = std::ranges::find(m_table, key, &std::pair<std::string, PLuaValue>::first);
+    return IT == m_table.end() ? PLuaValue{} : IT->second;
 }
 
-PLuaValue CLuaValue::get(const std::string& key) const {
-    for (const auto& [k, v] : m_table) {
-        if (k == key)
-            return v;
-    }
-    return nullptr;
+bool CLuaValue::has(std::string_view key) const {
+    return std::ranges::contains(m_table, key, &std::pair<std::string, PLuaValue>::first);
 }
 
 bool CLuaValue::empty() const {
     return m_table.empty() && m_array.empty();
 }
 
-CLuaValue& CLuaValue::setPath(const std::string& dottedPath, PLuaValue v) {
-    // hyprlang addresses options as "cat:sub:name" and, for the few grouped colors,
-    // "general:col.active_border". Both separators mean the same nesting in Lua.
-    std::vector<std::string> parts;
-    std::string              current;
-    for (const auto& c : dottedPath) {
-        if (c == ':' || c == '.') {
-            if (!current.empty())
-                parts.emplace_back(current);
-            current.clear();
-            continue;
-        }
-        current += c;
-    }
-    if (!current.empty())
-        parts.emplace_back(current);
+CLuaValue& CLuaValue::setPath(std::string_view path, PLuaValue value) {
+    auto parts = path | std::views::split(':') | std::views::transform([](auto&& r) { return std::string_view{r}; }) |
+        std::views::transform([](std::string_view s) { return s | std::views::split('.') | std::views::transform([](auto&& r) { return std::string_view{r}; }); }) |
+        std::views::join;
 
-    if (parts.empty())
+    std::vector<std::string_view> keys;
+    for (const auto& p : parts) {
+        if (!p.empty())
+            keys.emplace_back(p);
+    }
+
+    if (keys.empty())
         return *this;
 
     CLuaValue* node = this;
-    for (size_t i = 0; i + 1 < parts.size(); ++i) {
-        auto child = node->get(parts[i]);
+    for (const auto& key : keys | std::views::take(keys.size() - 1)) {
+        auto child = node->get(key);
         if (!child || child->m_type != LUA_VALUE_TABLE) {
             child = CLuaValue::table();
-            node->set(parts[i], child);
+            node->set(key, child);
         }
         node = child.get();
     }
 
-    node->set(parts.back(), std::move(v));
+    node->set(keys.back(), std::move(value));
     return *this;
 }
 
-std::string CLuaValue::renderInner(size_t indentLevel) const {
-    std::string pad;
-    for (size_t i = 0; i < indentLevel; ++i)
-        pad += INDENT;
-    const auto padIn = pad + INDENT;
-
+std::string CLuaValue::renderCompound(size_t indentLevel) const {
     std::vector<std::string> parts;
 
     if (m_type == LUA_VALUE_ARRAY) {
@@ -197,16 +195,18 @@ std::string CLuaValue::renderInner(size_t indentLevel) const {
 
     std::string oneLine = "{ ";
     for (size_t i = 0; i < parts.size(); ++i)
-        oneLine += parts[i] + (i + 1 < parts.size() ? ", " : " ");
+        oneLine += std::format("{}{}", parts[i], i + 1 < parts.size() ? ", " : " ");
     oneLine += "}";
 
-    if (oneLine.find('\n') == std::string::npos && oneLine.length() + pad.length() <= INLINE_WIDTH)
+    const auto PADDING = pad(indentLevel);
+
+    if (!oneLine.contains('\n') && oneLine.length() + PADDING.length() <= INLINE_WIDTH)
         return oneLine;
 
     std::string out = "{\n";
     for (const auto& p : parts)
-        out += padIn + p + ",\n";
-    out += pad + "}";
+        out += std::format("{}{}{},\n", PADDING, INDENT, p);
+    out += PADDING + "}";
     return out;
 }
 
@@ -217,7 +217,7 @@ std::string CLuaValue::render(size_t indentLevel) const {
         case LUA_VALUE_NUMBER: return formatLuaNumber(m_number, m_integer);
         case LUA_VALUE_BOOL: return m_bool ? "true" : "false";
         case LUA_VALUE_ARRAY:
-        case LUA_VALUE_TABLE: return renderInner(indentLevel);
+        case LUA_VALUE_TABLE: return renderCompound(indentLevel);
     }
 
     return "nil";

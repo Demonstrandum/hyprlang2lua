@@ -1,19 +1,21 @@
 #pragma once
 
-// Lua value model and emission. Nothing here knows about hyprlang; the converters build
-// these nodes and Emitter renders them.
-
-#include <memory>
+#include <cstdint>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
+
+#include <hyprutils/memory/SharedPtr.hpp>
 
 namespace H2L {
 
     class CLuaValue;
-    using PLuaValue = std::shared_ptr<CLuaValue>;
+
+    using PLuaValue = Hyprutils::Memory::CSharedPointer<CLuaValue>;
 
     enum eLuaValueType : uint8_t {
-        LUA_VALUE_RAW, // verbatim Lua source, e.g. a call expression
+        LUA_VALUE_RAW = 0, // verbatim Lua source, e.g. a call expression
         LUA_VALUE_STRING,
         LUA_VALUE_NUMBER,
         LUA_VALUE_BOOL,
@@ -23,42 +25,39 @@ namespace H2L {
 
     class CLuaValue {
       public:
-        static PLuaValue raw(const std::string& src);
-        static PLuaValue string(const std::string& s);
-        static PLuaValue number(double d);
-        static PLuaValue integer(int64_t i);
-        static PLuaValue boolean(bool b);
-        static PLuaValue array();
-        static PLuaValue table();
+        static PLuaValue        raw(std::string_view src);
+        static PLuaValue        string(std::string_view s);
+        static PLuaValue        number(double d);
+        static PLuaValue        integer(int64_t i);
+        static PLuaValue        boolean(bool b);
+        static PLuaValue        array();
+        static PLuaValue        table();
 
-        // array building
-        CLuaValue&       push(PLuaValue v);
-        // table building; insertion order is kept
-        CLuaValue&       set(const std::string& key, PLuaValue v);
-        bool             has(const std::string& key) const;
-        PLuaValue        get(const std::string& key) const;
+        CLuaValue&       push(PLuaValue value);
+        CLuaValue&       set(std::string_view key, PLuaValue value);
+        // "general:col.active_border" nests on both ':' and '.'
+        CLuaValue&       setPath(std::string_view path, PLuaValue value);
+
+        PLuaValue               get(std::string_view key) const;
+        bool             has(std::string_view key) const;
         bool             empty() const;
-
-        // "general:col.active_border" style paths, split on ':' and '.'
-        CLuaValue&       setPath(const std::string& dottedPath, PLuaValue v);
+        eLuaValueType    type() const;
 
         std::string      render(size_t indentLevel = 0) const;
 
-        eLuaValueType    type() const;
-
       private:
-        eLuaValueType                                m_type = LUA_VALUE_RAW;
-        std::string                                  m_string; // raw / string
-        double                                       m_number  = 0;
-        bool                                         m_integer = false;
-        bool                                         m_bool    = false;
-        std::vector<PLuaValue>                       m_array;
-        std::vector<std::pair<std::string, PLuaValue>> m_table;
+        std::string                                    renderCompound(size_t indentLevel) const;
 
-        std::string                                  renderInner(size_t indentLevel) const;
+        eLuaValueType                                  m_type = LUA_VALUE_RAW;
+        std::string                                    m_string;
+        double                                         m_number  = 0;
+        bool                                           m_integer = false;
+        bool                                           m_bool    = false;
+        std::vector<PLuaValue>                                m_array;
+        std::vector<std::pair<std::string, PLuaValue>>        m_table;
     };
 
-    bool        isLuaIdentifier(const std::string& s);
-    std::string quoteLuaString(const std::string& s);
+    bool        isLuaIdentifier(std::string_view s);
+    std::string quoteLuaString(std::string_view s);
     std::string formatLuaNumber(double d, bool isInteger);
 }

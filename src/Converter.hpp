@@ -20,6 +20,10 @@
 
 #include "Document.hpp"
 
+namespace Config::Values {
+    class IValue;
+}
+
 namespace H2L {
 
     struct SConvertError {
@@ -48,6 +52,9 @@ namespace H2L {
         void registerOptions();
         void registerDeviceCategory();
         void registerHandlers();
+
+        // descriptor + parsed hyprlang value -> the Lua the config tree wants
+        static PLuaValue luaForOption(const Config::Values::IValue* descriptor, Hyprlang::CConfigValue* value);
 
         // walks every registered option and emits the ones hyprlang saw in the file
         void emitOptions();

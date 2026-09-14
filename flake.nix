@@ -11,12 +11,15 @@
       let
         pkgs = import nixpkgs { inherit system; };
 
-        deps = with pkgs; [ hyprlang hyprutils hyprgraphics pixman libdrm ];
+        # Math.hpp (pulled in by the value descriptors) includes wayland-server-protocol.h
+        # for the transform enum, so the wayland headers are needed even though this
+        # program never talks to a compositor.
+        deps = with pkgs; [ hyprlang hyprutils hyprgraphics pixman libdrm wayland wayland-protocols libxkbcommon ];
 
         nativeDeps = with pkgs; [ pkg-config cmake ];
       in
       {
-        packages.default = pkgs.stdenv.mkDerivation {
+        packages.default = pkgs.hyprlang.stdenv.mkDerivation {
           pname = "hyprlang2lua";
           version = "0.1.0";
           src = ./.;
@@ -28,12 +31,7 @@
           # same sources so that `nix build` works without a buck2 daemon in the sandbox.
           buildPhase = ''
             runHook preBuild
-            mkdir -p build
-            $CXX -std=c++26 -O2 -o build/hyprlang2lua \
-              -Ishim -Ivendor \
-              $(pkg-config --cflags hyprlang hyprutils hyprgraphics pixman-1) \
-              src/*.cpp vendor/config/values/*.cpp vendor/config/values/types/*.cpp vendor/helpers/*.cpp \
-              $(pkg-config --libs hyprlang hyprutils hyprgraphics pixman-1)
+            ./tools/build.sh
             runHook postBuild
           '';
 
@@ -49,8 +47,10 @@
           };
         };
 
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [ buck2 clang-tools lua luajit gnumake git ] ++ nativeDeps ++ deps;
+        # hyprlang and hyprutils are built with a newer libstdc++ than the default stdenv
+        # ships, so the shell and the package both use the compiler they were built with.
+        devShells.default = (pkgs.mkShell.override { stdenv = pkgs.hyprlang.stdenv; }) {
+          packages = with pkgs; [ buck2 lua luajit gnumake git ] ++ nativeDeps ++ deps;
 
           shellHook = ''
             export HYPRLANG2LUA_CXXFLAGS="$(pkg-config --cflags hyprlang hyprutils hyprgraphics pixman-1)"
