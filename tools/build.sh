@@ -40,6 +40,7 @@ mkdir -p build/gen build/obj
 
 # generated tables, derived from the pinned submodules
 ./tools/gen_device_values.sh "$LEGACY/config/legacy/ConfigManager.cpp" build/gen/DeviceValues.gen.hpp
+./tools/gen_rule_names.sh third_party/hyprland/src build/gen/RuleNames.gen.hpp
 
 # Hyprland sources this converter reuses rather than reimplements
 REUSED=(

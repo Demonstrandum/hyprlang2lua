@@ -358,6 +358,7 @@ void CConverter::registerDeviceCategory() {
 
 void CConverter::registerHandlers() {
     registerKeywordHandlers();
+    registerRuleHandlers();
 }
 
 void CConverter::addStartupExec(const std::string& command) {
