@@ -1,0 +1,561 @@
+{
+  "exec": {
+    "actions": [],
+    "candidates": []
+  },
+  "execr": {
+    "actions": [],
+    "candidates": []
+  },
+  "killactive": {
+    "actions": [
+      "closeWindow"
+    ],
+    "candidates": [
+      "dsp.window.close"
+    ]
+  },
+  "forcekillactive": {
+    "actions": [
+      "killWindow"
+    ],
+    "candidates": [
+      "dsp.window.kill"
+    ]
+  },
+  "closewindow": {
+    "actions": [
+      "closeWindow"
+    ],
+    "candidates": [
+      "dsp.window.close"
+    ]
+  },
+  "killwindow": {
+    "actions": [
+      "killWindow"
+    ],
+    "candidates": [
+      "dsp.window.kill"
+    ]
+  },
+  "signal": {
+    "actions": [
+      "signalWindow"
+    ],
+    "candidates": [
+      "dsp.window.signal"
+    ]
+  },
+  "signalwindow": {
+    "actions": [
+      "signalWindow"
+    ],
+    "candidates": [
+      "dsp.window.signal"
+    ]
+  },
+  "togglefloating": {
+    "actions": [
+      "floatWindow"
+    ],
+    "candidates": [
+      "dsp.window.float"
+    ]
+  },
+  "setfloating": {
+    "actions": [
+      "floatWindow"
+    ],
+    "candidates": [
+      "dsp.window.float"
+    ]
+  },
+  "settiled": {
+    "actions": [
+      "floatWindow"
+    ],
+    "candidates": [
+      "dsp.window.float"
+    ]
+  },
+  "workspace": {
+    "actions": [
+      "changeWorkspace"
+    ],
+    "candidates": [
+      "dsp.focus"
+    ]
+  },
+  "renameworkspace": {
+    "actions": [
+      "renameWorkspace"
+    ],
+    "candidates": [
+      "dsp.workspace.rename"
+    ]
+  },
+  "fullscreen": {
+    "actions": [
+      "fullscreenWindow"
+    ],
+    "candidates": [
+      "dsp.window.fullscreen",
+      "dsp.window.fullscreen_state"
+    ]
+  },
+  "fullscreenstate": {
+    "actions": [
+      "fullscreenWindow"
+    ],
+    "candidates": [
+      "dsp.window.fullscreen",
+      "dsp.window.fullscreen_state"
+    ]
+  },
+  "movetoworkspace": {
+    "actions": [
+      "moveToWorkspace"
+    ],
+    "candidates": [
+      "dsp.window.move"
+    ]
+  },
+  "movetoworkspacesilent": {
+    "actions": [
+      "moveToWorkspace"
+    ],
+    "candidates": [
+      "dsp.window.move"
+    ]
+  },
+  "pseudo": {
+    "actions": [
+      "pseudoWindow"
+    ],
+    "candidates": [
+      "dsp.window.pseudo"
+    ]
+  },
+  "movefocus": {
+    "actions": [
+      "moveFocus"
+    ],
+    "candidates": [
+      "dsp.focus"
+    ]
+  },
+  "movewindow": {
+    "actions": [
+      "moveToWorkspace",
+      "moveInDirection"
+    ],
+    "candidates": [
+      "dsp.window.move"
+    ]
+  },
+  "swapwindow": {
+    "actions": [
+      "swapInDirection"
+    ],
+    "candidates": [
+      "dsp.window.swap"
+    ]
+  },
+  "centerwindow": {
+    "actions": [
+      "center"
+    ],
+    "candidates": [
+      "dsp.window.center"
+    ]
+  },
+  "togglegroup": {
+    "actions": [
+      "toggleGroup"
+    ],
+    "candidates": [
+      "dsp.group.toggle"
+    ]
+  },
+  "changegroupactive": {
+    "actions": [
+      "changeGroupActive"
+    ],
+    "candidates": [
+      "dsp.group.next",
+      "dsp.group.prev"
+    ]
+  },
+  "movegroupwindow": {
+    "actions": [
+      "moveGroupWindow"
+    ],
+    "candidates": [
+      "dsp.group.move_window"
+    ]
+  },
+  "focusmonitor": {
+    "actions": [
+      "focusMonitor"
+    ],
+    "candidates": [
+      "dsp.focus"
+    ]
+  },
+  "movecursortocorner": {
+    "actions": [
+      "moveCursorToCorner"
+    ],
+    "candidates": [
+      "dsp.cursor.move_to_corner"
+    ]
+  },
+  "movecursor": {
+    "actions": [
+      "moveCursor"
+    ],
+    "candidates": [
+      "dsp.cursor.move"
+    ]
+  },
+  "workspaceopt": {
+    "actions": [],
+    "candidates": []
+  },
+  "exit": {
+    "actions": [
+      "exit"
+    ],
+    "candidates": [
+      "dsp.exit"
+    ]
+  },
+  "movecurrentworkspacetomonitor": {
+    "actions": [
+      "moveToMonitor"
+    ],
+    "candidates": [
+      "dsp.workspace.move"
+    ]
+  },
+  "focusworkspaceoncurrentmonitor": {
+    "actions": [
+      "changeWorkspaceOnCurrentMonitor"
+    ],
+    "candidates": [
+      "dsp.focus"
+    ]
+  },
+  "moveworkspacetomonitor": {
+    "actions": [
+      "moveToMonitor"
+    ],
+    "candidates": [
+      "dsp.workspace.move"
+    ]
+  },
+  "togglespecialworkspace": {
+    "actions": [
+      "toggleSpecial"
+    ],
+    "candidates": [
+      "dsp.workspace.toggle_special"
+    ]
+  },
+  "forcerendererreload": {
+    "actions": [
+      "forceRendererReload"
+    ],
+    "candidates": [
+      "dsp.force_renderer_reload"
+    ]
+  },
+  "resizeactive": {
+    "actions": [
+      "resize"
+    ],
+    "candidates": [
+      "dsp.window.resize"
+    ]
+  },
+  "moveactive": {
+    "actions": [
+      "move"
+    ],
+    "candidates": [
+      "dsp.window.move"
+    ]
+  },
+  "cyclenext": {
+    "actions": [
+      "cycleNext"
+    ],
+    "candidates": [
+      "dsp.window.cycle_next"
+    ]
+  },
+  "focuswindowbyclass": {
+    "actions": [
+      "focus"
+    ],
+    "candidates": [
+      "dsp.focus"
+    ]
+  },
+  "focuswindow": {
+    "actions": [
+      "focus"
+    ],
+    "candidates": [
+      "dsp.focus"
+    ]
+  },
+  "tagwindow": {
+    "actions": [
+      "tag"
+    ],
+    "candidates": [
+      "dsp.window.tag"
+    ]
+  },
+  "toggleswallow": {
+    "actions": [
+      "toggleSwallow"
+    ],
+    "candidates": [
+      "dsp.window.toggle_swallow"
+    ]
+  },
+  "submap": {
+    "actions": [
+      "setSubmap"
+    ],
+    "candidates": [
+      "dsp.submap"
+    ]
+  },
+  "pass": {
+    "actions": [
+      "pass"
+    ],
+    "candidates": [
+      "dsp.pass",
+      "dsp.send_shortcut"
+    ]
+  },
+  "sendshortcut": {
+    "actions": [
+      "pass"
+    ],
+    "candidates": [
+      "dsp.pass",
+      "dsp.send_shortcut"
+    ]
+  },
+  "sendkeystate": {
+    "actions": [
+      "state"
+    ],
+    "candidates": []
+  },
+  "layoutmsg": {
+    "actions": [
+      "layoutMessage"
+    ],
+    "candidates": [
+      "dsp.layout"
+    ]
+  },
+  "dpms": {
+    "actions": [
+      "dpms"
+    ],
+    "candidates": [
+      "dsp.dpms"
+    ]
+  },
+  "movewindowpixel": {
+    "actions": [
+      "move"
+    ],
+    "candidates": [
+      "dsp.window.move"
+    ]
+  },
+  "resizewindowpixel": {
+    "actions": [
+      "resize"
+    ],
+    "candidates": [
+      "dsp.window.resize"
+    ]
+  },
+  "swapnext": {
+    "actions": [
+      "swapNext"
+    ],
+    "candidates": [
+      "dsp.window.swap"
+    ]
+  },
+  "swapactiveworkspaces": {
+    "actions": [
+      "swapActiveWorkspaces"
+    ],
+    "candidates": [
+      "dsp.workspace.swap_monitors"
+    ]
+  },
+  "pin": {
+    "actions": [
+      "pinWindow"
+    ],
+    "candidates": [
+      "dsp.window.pin"
+    ]
+  },
+  "mouse": {
+    "actions": [
+      "mouse"
+    ],
+    "candidates": [
+      "dsp.window.drag",
+      "dsp.window.resize"
+    ]
+  },
+  "bringactivetotop": {
+    "actions": [
+      "alterZOrder"
+    ],
+    "candidates": [
+      "dsp.window.bring_to_top",
+      "dsp.window.alter_zorder"
+    ]
+  },
+  "alterzorder": {
+    "actions": [
+      "alterZOrder"
+    ],
+    "candidates": [
+      "dsp.window.bring_to_top",
+      "dsp.window.alter_zorder"
+    ]
+  },
+  "focusurgentorlast": {
+    "actions": [
+      "focusUrgentOrLast"
+    ],
+    "candidates": [
+      "dsp.focus"
+    ]
+  },
+  "focuscurrentorlast": {
+    "actions": [
+      "focusCurrentOrLast"
+    ],
+    "candidates": [
+      "dsp.focus"
+    ]
+  },
+  "lockgroups": {
+    "actions": [
+      "lockGroups"
+    ],
+    "candidates": [
+      "dsp.group.lock"
+    ]
+  },
+  "lockactivegroup": {
+    "actions": [
+      "lockActiveGroup"
+    ],
+    "candidates": [
+      "dsp.group.lock_active"
+    ]
+  },
+  "moveintogroup": {
+    "actions": [
+      "moveIntoGroup"
+    ],
+    "candidates": [
+      "dsp.window.move"
+    ]
+  },
+  "moveintoorcreategroup": {
+    "actions": [
+      "moveIntoOrCreateGroup"
+    ],
+    "candidates": [
+      "dsp.window.move"
+    ]
+  },
+  "moveoutofgroup": {
+    "actions": [
+      "moveOutOfGroup"
+    ],
+    "candidates": [
+      "dsp.window.move"
+    ]
+  },
+  "movewindoworgroup": {
+    "actions": [
+      "moveWindowOrGroup"
+    ],
+    "candidates": [
+      "dsp.window.move"
+    ]
+  },
+  "setignoregrouplock": {
+    "actions": [],
+    "candidates": []
+  },
+  "denywindowfromgroup": {
+    "actions": [
+      "denyWindowFromGroup"
+    ],
+    "candidates": [
+      "dsp.window.deny_from_group"
+    ]
+  },
+  "event": {
+    "actions": [
+      "event"
+    ],
+    "candidates": [
+      "dsp.event"
+    ]
+  },
+  "global": {
+    "actions": [
+      "global"
+    ],
+    "candidates": [
+      "dsp.global"
+    ]
+  },
+  "setprop": {
+    "actions": [
+      "setProp"
+    ],
+    "candidates": [
+      "dsp.window.set_prop"
+    ]
+  },
+  "forceidle": {
+    "actions": [
+      "forceIdle"
+    ],
+    "candidates": [
+      "dsp.force_idle"
+    ]
+  },
+  "releaseinputcapture": {
+    "actions": [
+      "releaseInputCapture"
+    ],
+    "candidates": [
+      "dsp.release_input_capture"
+    ]
+  }
+}

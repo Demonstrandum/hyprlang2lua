@@ -1,0 +1,486 @@
+{
+  "config": [
+    "config",
+    "get_config",
+    "device",
+    "monitor",
+    "window_rule",
+    "layer_rule",
+    "workspace_rule",
+    "env",
+    "permission",
+    "plugin.load",
+    "gesture",
+    "curve",
+    "animation"
+  ],
+  "dsp": {
+    "dsp.cursor.move_to_corner": [
+      "dsp_moveCursorToCorner"
+    ],
+    "dsp.cursor.move": [
+      "dsp_moveCursor"
+    ],
+    "dsp.group.toggle": [
+      "dsp_toggleGroup"
+    ],
+    "dsp.group.next": [
+      "dsp_changeGroupActive"
+    ],
+    "dsp.group.prev": [
+      "dsp_changeGroupActive"
+    ],
+    "dsp.group.active": [
+      "dsp_setGroupActive"
+    ],
+    "dsp.group.move_window": [
+      "dsp_moveGroupWindow"
+    ],
+    "dsp.group.lock": [
+      "dsp_lockGroups"
+    ],
+    "dsp.group.lock_active": [
+      "dsp_lockActiveGroup"
+    ],
+    "dsp.window.close": [
+      "dsp_closeWindow"
+    ],
+    "dsp.window.kill": [
+      "dsp_killWindow"
+    ],
+    "dsp.window.signal": [
+      "dsp_signalWindow"
+    ],
+    "dsp.window.float": [
+      "dsp_floatWindow"
+    ],
+    "dsp.window.fullscreen": [
+      "dsp_fullscreenWindow",
+      "dsp_fullscreenWindowWithAction"
+    ],
+    "dsp.window.fullscreen_state": [
+      "dsp_fullscreenState"
+    ],
+    "dsp.window.pseudo": [
+      "dsp_pseudoWindow"
+    ],
+    "dsp.window.move": [
+      "dsp_moveWindowOrGroup",
+      "dsp_moveInDirection",
+      "dsp_move",
+      "dsp_moveToWorkspace",
+      "dsp_moveToMonitor",
+      "dsp_moveIntoGroup",
+      "dsp_moveIntoOrCreateGroup",
+      "dsp_moveOutOfGroup"
+    ],
+    "dsp.window.swap": [
+      "dsp_swapInDirection",
+      "dsp_swapWithWindow",
+      "dsp_swapNext"
+    ],
+    "dsp.window.center": [
+      "dsp_center"
+    ],
+    "dsp.window.cycle_next": [
+      "dsp_cycleNext"
+    ],
+    "dsp.window.tag": [
+      "dsp_tagWindow"
+    ],
+    "dsp.window.clear_tags": [
+      "dsp_clearTags"
+    ],
+    "dsp.window.toggle_swallow": [
+      "dsp_toggleSwallow"
+    ],
+    "dsp.window.pin": [
+      "dsp_pinWindow"
+    ],
+    "dsp.window.bring_to_top": [
+      "dsp_bringToTop"
+    ],
+    "dsp.window.alter_zorder": [
+      "dsp_alterZOrder"
+    ],
+    "dsp.window.set_prop": [
+      "dsp_setProp"
+    ],
+    "dsp.window.deny_from_group": [
+      "dsp_denyFromGroup"
+    ],
+    "dsp.window.drag": [
+      "dsp_mouseDrag"
+    ],
+    "dsp.window.resize": [
+      "dsp_mouseResize",
+      "dsp_resize"
+    ],
+    "dsp.workspace.rename": [
+      "dsp_renameWorkspace"
+    ],
+    "dsp.workspace.change_id": [
+      "dsp_workspaceChangeID"
+    ],
+    "dsp.workspace.move": [
+      "dsp_moveWorkspaceToMonitor",
+      "dsp_moveCurrentWorkspaceToMonitor"
+    ],
+    "dsp.workspace.swap_monitors": [
+      "dsp_swapActiveWorkspaces"
+    ],
+    "dsp.workspace.toggle_special": [
+      "dsp_toggleSpecial"
+    ],
+    "dsp.exec_cmd": [
+      "dsp_execCmd"
+    ],
+    "dsp.exec_raw": [
+      "dsp_execRaw"
+    ],
+    "dsp.exit": [
+      "dsp_exit"
+    ],
+    "dsp.reload_config": [
+      "dsp_reload_config"
+    ],
+    "dsp.submap": [
+      "dsp_submap"
+    ],
+    "dsp.pass": [
+      "dsp_pass"
+    ],
+    "dsp.send_shortcut": [
+      "dsp_sendShortcut"
+    ],
+    "dsp.send_key_state": [
+      "dsp_sendKeyState"
+    ],
+    "dsp.layout": [
+      "dsp_layoutMsg"
+    ],
+    "dsp.dpms": [
+      "dsp_dpms"
+    ],
+    "dsp.event": [
+      "dsp_event"
+    ],
+    "dsp.global": [
+      "dsp_global"
+    ],
+    "dsp.force_renderer_reload": [
+      "dsp_forceRendererReload"
+    ],
+    "dsp.force_idle": [
+      "dsp_forceIdle"
+    ],
+    "dsp.release_input_capture": [
+      "dsp_releaseInputCapture"
+    ],
+    "dsp.focus": [
+      "dsp_moveFocus",
+      "dsp_focusMonitor",
+      "dsp_focusWorkspaceOnCurrentMonitor",
+      "dsp_changeWorkspace",
+      "dsp_focusWindowBySelector",
+      "dsp_focusUrgentOrLast",
+      "dsp_focusCurrentOrLast"
+    ],
+    "dsp.no_op": [
+      "dsp_noop"
+    ]
+  },
+  "dspActions": {
+    "dsp_moveCursorToCorner": [
+      "moveCursorToCorner"
+    ],
+    "dsp_moveCursor": [
+      "moveCursor"
+    ],
+    "dsp_toggleGroup": [
+      "toggleGroup"
+    ],
+    "dsp_changeGroupActive": [
+      "changeGroupActive"
+    ],
+    "dsp_setGroupActive": [
+      "setGroupActive"
+    ],
+    "dsp_moveGroupWindow": [
+      "moveGroupWindow"
+    ],
+    "dsp_lockGroups": [
+      "lockGroups"
+    ],
+    "dsp_lockActiveGroup": [
+      "lockActiveGroup"
+    ],
+    "dsp_execCmd": [],
+    "dsp_execRaw": [],
+    "dsp_exit": [
+      "exit"
+    ],
+    "dsp_reload_config": [
+      "reloadConfig"
+    ],
+    "dsp_submap": [
+      "setSubmap"
+    ],
+    "dsp_pass": [
+      "pass"
+    ],
+    "dsp_layoutMsg": [
+      "layoutMessage"
+    ],
+    "dsp_dpms": [
+      "dpms"
+    ],
+    "dsp_event": [
+      "event"
+    ],
+    "dsp_global": [
+      "global"
+    ],
+    "dsp_forceRendererReload": [
+      "forceRendererReload"
+    ],
+    "dsp_forceIdle": [
+      "forceIdle"
+    ],
+    "dsp_releaseInputCapture": [
+      "releaseInputCapture"
+    ],
+    "dsp_sendShortcut": [
+      "pass"
+    ],
+    "dsp_sendKeyState": [
+      "sendKeyState"
+    ],
+    "dsp_moveToWorkspace": [
+      "moveToWorkspace"
+    ],
+    "dsp_moveToMonitor": [
+      "moveToWorkspace"
+    ],
+    "dsp_closeWindow": [
+      "closeWindow"
+    ],
+    "dsp_killWindow": [
+      "killWindow"
+    ],
+    "dsp_signalWindow": [
+      "signalWindow"
+    ],
+    "dsp_floatWindow": [
+      "floatWindow"
+    ],
+    "dsp_fullscreenWindow": [
+      "fullscreenWindow"
+    ],
+    "dsp_fullscreenWindowWithAction": [
+      "fullscreenWindow"
+    ],
+    "dsp_fullscreenState": [
+      "fullscreenWindow"
+    ],
+    "dsp_pseudoWindow": [
+      "pseudoWindow"
+    ],
+    "dsp_moveInDirection": [
+      "moveInDirection"
+    ],
+    "dsp_swapInDirection": [
+      "swapInDirection"
+    ],
+    "dsp_center": [
+      "center"
+    ],
+    "dsp_cycleNext": [
+      "cycleNext"
+    ],
+    "dsp_swapNext": [
+      "swapNext"
+    ],
+    "dsp_swapWithWindow": [
+      "swapWith"
+    ],
+    "dsp_tagWindow": [
+      "tag"
+    ],
+    "dsp_clearTags": [
+      "clearTags"
+    ],
+    "dsp_toggleSwallow": [
+      "toggleSwallow"
+    ],
+    "dsp_resize": [
+      "resize"
+    ],
+    "dsp_move": [
+      "move"
+    ],
+    "dsp_pinWindow": [
+      "pinWindow"
+    ],
+    "dsp_bringToTop": [
+      "alterZOrder"
+    ],
+    "dsp_alterZOrder": [
+      "alterZOrder"
+    ],
+    "dsp_setProp": [
+      "setProp"
+    ],
+    "dsp_moveIntoGroup": [
+      "moveIntoGroup"
+    ],
+    "dsp_moveOutOfGroup": [
+      "moveOutOfGroup"
+    ],
+    "dsp_moveWindowOrGroup": [
+      "moveWindowOrGroup"
+    ],
+    "dsp_moveIntoOrCreateGroup": [
+      "moveIntoOrCreateGroup"
+    ],
+    "dsp_denyFromGroup": [
+      "denyWindowFromGroup"
+    ],
+    "dsp_mouseDrag": [
+      "mouse"
+    ],
+    "dsp_mouseResize": [
+      "mouse"
+    ],
+    "dsp_moveFocus": [
+      "moveFocus"
+    ],
+    "dsp_focusMonitor": [
+      "focusMonitor"
+    ],
+    "dsp_focusWindowBySelector": [
+      "focus"
+    ],
+    "dsp_focusUrgentOrLast": [
+      "focusUrgentOrLast"
+    ],
+    "dsp_focusCurrentOrLast": [
+      "focusCurrentOrLast"
+    ],
+    "dsp_changeWorkspace": [
+      "changeWorkspace"
+    ],
+    "dsp_focusWorkspaceOnCurrentMonitor": [
+      "changeWorkspaceOnCurrentMonitor"
+    ],
+    "dsp_noop": [],
+    "dsp_toggleSpecial": [
+      "toggleSpecial"
+    ],
+    "dsp_renameWorkspace": [
+      "renameWorkspace"
+    ],
+    "dsp_workspaceChangeID": [
+      "changeWorkspaceID"
+    ],
+    "dsp_moveWorkspaceToMonitor": [
+      "moveToMonitor"
+    ],
+    "dsp_moveCurrentWorkspaceToMonitor": [
+      "moveToMonitor"
+    ],
+    "dsp_swapActiveWorkspaces": [
+      "swapActiveWorkspaces"
+    ]
+  },
+  "fields": {
+    "device": [
+      "sensitivity",
+      "accel_profile",
+      "rotation",
+      "kb_file",
+      "kb_layout",
+      "kb_variant",
+      "kb_options",
+      "kb_rules",
+      "kb_model",
+      "repeat_rate",
+      "repeat_delay",
+      "natural_scroll",
+      "tap_button_map",
+      "numlock_by_default",
+      "resolve_binds_by_sym",
+      "disable_while_typing",
+      "clickfinger_behavior",
+      "middle_button_emulation",
+      "tap_to_click",
+      "tap_and_drag",
+      "drag_lock",
+      "left_handed",
+      "scroll_method",
+      "scroll_button",
+      "scroll_button_lock",
+      "scroll_points",
+      "scroll_factor",
+      "transform",
+      "output",
+      "enabled",
+      "region_position",
+      "absolute_region_position",
+      "region_size",
+      "relative_input",
+      "active_area_position",
+      "active_area_size",
+      "flip_x",
+      "flip_y",
+      "drag_3fg",
+      "keybinds",
+      "share_states",
+      "release_pressed_on_close",
+      "tags"
+    ],
+    "window_rule": [],
+    "layer_rule": [],
+    "workspace_rule": [
+      "monitor",
+      "default",
+      "persistent",
+      "gaps_in",
+      "gaps_out",
+      "float_gaps",
+      "border_size",
+      "no_border",
+      "no_rounding",
+      "decorate",
+      "no_shadow",
+      "on_created_empty",
+      "default_name",
+      "layout",
+      "animation"
+    ],
+    "monitor": [
+      "mode",
+      "position",
+      "scale",
+      "reserved",
+      "reserved_area",
+      "disabled",
+      "transform",
+      "mirror",
+      "bitdepth",
+      "cm",
+      "sdr_eotf",
+      "sdrbrightness",
+      "sdrsaturation",
+      "vrr",
+      "icc",
+      "supports_wide_color",
+      "supports_hdr",
+      "sdr_min_luminance",
+      "sdr_max_luminance",
+      "min_luminance",
+      "max_luminance",
+      "max_avg_luminance"
+    ]
+  }
+}
