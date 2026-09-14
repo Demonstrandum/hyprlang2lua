@@ -1,0 +1,6 @@
+[submodule "third_party/hyprland-legacy"]
+	path = third_party/hyprland-legacy
+	url = https://github.com/hyprwm/Hyprland.git
+[submodule "third_party/hyprland"]
+	path = third_party/hyprland
+	url = https://github.com/hyprwm/Hyprland.git
