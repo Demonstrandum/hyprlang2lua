@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include <hyprutils/path/Path.hpp>
+
 #include "Converter.hpp"
 
 using namespace H2L;
@@ -13,10 +15,24 @@ static void usage() {
     std::println(stderr, R"(hyprlang2lua - converts a legacy Hyprland .conf into the Lua config format
 
 usage:
-  hyprlang2lua <config.conf> [-o <out.lua>]
+  hyprlang2lua [config.conf] [-o <out.lua>] [-f]
 
-with no -o, the Lua goes to stdout. Conversion notes and anything that could not
-be translated are written into the output as comments, and to stderr.)");
+with no input, the .conf is looked up where Hyprland looks for it, and the Lua is
+written next to it as hyprland.lua. With no -o and an explicit input, the Lua goes
+to stdout. -f overwrites an existing output file.
+
+Conversion notes and anything that could not be translated are written into the
+output as comments, and to stderr.)");
+}
+
+// the search Hyprland itself does, via the same hyprutils helper its config path code uses
+static std::string findLegacyConfig() {
+    if (const auto FROM_ENV = getenv("HYPRLAND_CONFIG"); FROM_ENV)
+        return FROM_ENV;
+
+    const auto PATHS = Hyprutils::Path::findConfig("hyprland", "conf");
+
+    return PATHS.first.value_or("");
 }
 
 int main(int argc, char** argv) {
@@ -24,6 +40,7 @@ int main(int argc, char** argv) {
 
     std::string              input;
     std::string              output;
+    bool                     force = false;
 
     for (size_t i = 0; i < ARGS.size(); ++i) {
         const std::string ARG = ARGS[i];
@@ -31,6 +48,11 @@ int main(int argc, char** argv) {
         if (ARG == "-h" || ARG == "--help") {
             usage();
             return 0;
+        }
+
+        if (ARG == "-f" || ARG == "--force") {
+            force = true;
+            continue;
         }
 
         if (ARG == "-o") {
@@ -50,13 +72,29 @@ int main(int argc, char** argv) {
         input = ARG;
     }
 
-    if (input.empty()) {
-        usage();
-        return 2;
+    const bool AUTO_FOUND = input.empty();
+
+    if (AUTO_FOUND) {
+        input = findLegacyConfig();
+
+        if (input.empty()) {
+            std::println(stderr, "hyprlang2lua: no hyprland.conf found in the usual places; pass one explicitly");
+            return 1;
+        }
+
+        std::println(stderr, "hyprlang2lua: converting {}", input);
+
+        if (output.empty())
+            output = (std::filesystem::path{input}.parent_path() / "hyprland.lua").string();
     }
 
     if (!std::filesystem::exists(input)) {
         std::println(stderr, "hyprlang2lua: {} does not exist", input);
+        return 1;
+    }
+
+    if (!output.empty() && !force && std::filesystem::exists(output)) {
+        std::println(stderr, "hyprlang2lua: {} already exists; pass -f to overwrite", output);
         return 1;
     }
 
@@ -68,6 +106,7 @@ int main(int argc, char** argv) {
     if (output.empty())
         std::print("{}", LUA);
     else {
+        std::println(stderr, "hyprlang2lua: writing {}", output);
         std::ofstream file(output, std::ios::trunc);
         if (!file.good()) {
             std::println(stderr, "hyprlang2lua: cannot write {}", output);

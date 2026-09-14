@@ -55,6 +55,7 @@ namespace H2L {
         // defined in src/handlers, one translation unit per family of keywords
         void registerKeywordHandlers();
         void registerRuleHandlers();
+        void registerBindHandlers();
 
       private:
         void registerOptions();

@@ -72,4 +72,6 @@ done
 # shellcheck disable=SC2086
 $CXX -std=c++26 -O2 -o "$OUT" "${objects[@]}" $LDFLAGS
 
+./tools/gen_fixtures.sh > /dev/null
+
 echo "built $OUT"
