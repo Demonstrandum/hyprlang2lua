@@ -50,7 +50,7 @@ REUSED=(
     "$LEGACY"/helpers/env/Env.cpp
 )
 
-OWN=(src/*.cpp)
+OWN=(src/*.cpp src/handlers/*.cpp)
 
 objects=()
 

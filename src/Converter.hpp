@@ -45,13 +45,22 @@ namespace H2L {
 
         void                              error(const std::string& message);
 
+        // collected by the exec handlers, written out as one hyprland.start subscription
+        void                              addStartupExec(const std::string& command);
+        void                              addShutdownExec(const std::string& command);
+
         // handlers are free functions in src/handlers; they reach the active converter here
         static CConverter*                active();
+
+        // defined in src/handlers, one translation unit per family of keywords
+        void registerKeywordHandlers();
 
       private:
         void registerOptions();
         void registerDeviceCategory();
         void registerHandlers();
+
+        void emitExecs();
 
         // descriptor + parsed hyprlang value -> the Lua the config tree wants
         static PLuaValue luaForOption(const Config::Values::IValue* descriptor, Hyprlang::CConfigValue* value);
@@ -64,5 +73,7 @@ namespace H2L {
         CDocument                          m_document;
         std::vector<SConvertError>         m_errors;
         std::string                        m_path;
+        std::vector<std::string>           m_startupExecs;
+        std::vector<std::string>           m_shutdownExecs;
     };
 }

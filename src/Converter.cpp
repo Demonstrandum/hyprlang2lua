@@ -357,7 +357,32 @@ void CConverter::registerDeviceCategory() {
 }
 
 void CConverter::registerHandlers() {
-    ; // keyword handlers land here
+    registerKeywordHandlers();
+}
+
+void CConverter::addStartupExec(const std::string& command) {
+    m_startupExecs.emplace_back(command);
+}
+
+void CConverter::addShutdownExec(const std::string& command) {
+    m_shutdownExecs.emplace_back(command);
+}
+
+void CConverter::emitExecs() {
+    const auto SUBSCRIPTION = [this](const std::string& event, const std::vector<std::string>& commands) {
+        if (commands.empty())
+            return;
+
+        std::string lua = std::format("hl.on({}, function()\n", quoteLuaString(event));
+        for (const auto& c : commands)
+            lua += std::format("    hl.exec_cmd({})\n", quoteLuaString(c));
+        lua += "end)";
+
+        m_document.addStatement(SECTION_AUTOSTART, lua);
+    };
+
+    SUBSCRIPTION("hyprland.start", m_startupExecs);
+    SUBSCRIPTION("hyprland.shutdown", m_shutdownExecs);
 }
 
 void CConverter::emitDevices() {
@@ -381,6 +406,7 @@ bool CConverter::convert(const std::string& path) {
 
     emitOptions();
     emitDevices();
+    emitExecs();
 
     return m_errors.empty();
 }
