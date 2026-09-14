@@ -46,6 +46,10 @@ namespace H2L {
         void                              error(const std::string& message);
 
         // collected by the exec handlers, written out as one hyprland.start subscription
+        // binds go through here so that the ones inside a submap end up in its block
+        void                              addBind(const std::string& statement);
+        void                              setSubmap(const std::string& name, const std::string& reset);
+
         void                              addStartupExec(const std::string& command);
         void                              addShutdownExec(const std::string& command);
 
@@ -58,6 +62,8 @@ namespace H2L {
         void registerBindHandlers();
         void registerMonitorHandlers();
         void emitRuleBlocks();
+        void emitMonitorBlocks();
+        void emitSubmaps();
 
       private:
         void registerOptions();
@@ -79,5 +85,7 @@ namespace H2L {
         std::string                        m_path;
         std::vector<std::string>           m_startupExecs;
         std::vector<std::string>           m_shutdownExecs;
+        std::string                        m_currentSubmap;
+        std::vector<std::pair<std::string, std::vector<std::string>>> m_submapBinds;
     };
 }

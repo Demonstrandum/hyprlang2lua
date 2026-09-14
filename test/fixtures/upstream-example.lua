@@ -114,6 +114,11 @@ hl.window_rule({
     match = { class = "hyprland-run" },
 })
 
+------------------
+---- GESTURES ----
+------------------
+hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
+
 -----------------
 ---- DEVICES ----
 -----------------

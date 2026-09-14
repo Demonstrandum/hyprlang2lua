@@ -299,7 +299,7 @@ static Hyprlang::CParseResult handleBind(const char* command, const char* value)
 
     if (!CALL) {
         converter->document().addWarning(std::format("{} = {}: dispatcher \"{}\" has no known Lua equivalent", KEYWORD, value, dispatcher));
-        converter->document().addComment(SECTION_BINDS, std::format("{} = {}", KEYWORD, value));
+        converter->addBind(std::format("-- {} = {}", KEYWORD, value));
         return result;
     }
 
@@ -308,9 +308,10 @@ static Hyprlang::CParseResult handleBind(const char* command, const char* value)
 
     const auto OPTS = optionsTable(flags, DESCRIPTION, DEVICES);
 
-    converter->document().addStatement(SECTION_BINDS,
-                                       OPTS->empty() ? std::format("hl.bind({}, {})", quoteLuaString(KEYS), *CALL) :
-                                                       std::format("hl.bind({}, {}, {})", quoteLuaString(KEYS), *CALL, OPTS->render()));
+    const auto STATEMENT = OPTS->empty() ? std::format("hl.bind({}, {})", quoteLuaString(KEYS), *CALL) :
+                                           std::format("hl.bind({}, {}, {})", quoteLuaString(KEYS), *CALL, OPTS->render());
+
+    converter->addBind(STATEMENT);
 
     return result;
 }
@@ -321,7 +322,7 @@ static Hyprlang::CParseResult handleUnbind(const char*, const char* value) {
         return {};
 
     const auto ARGS = CVarList(value, 2);
-    converter->document().addStatement(SECTION_BINDS, std::format("hl.unbind({})", quoteLuaString(keyString(ARGS[0], ARGS[1]))));
+    converter->addBind(std::format("hl.unbind({})", quoteLuaString(keyString(ARGS[0], ARGS[1]))));
     return {};
 }
 
@@ -331,15 +332,11 @@ static Hyprlang::CParseResult handleSubmap(const char*, const char* value) {
         return {};
 
     const auto DATA = CVarList2(std::string{value});
-    const auto NAME = DATA[0];
+    const auto NAME = std::string{DATA[0]};
 
-    if (NAME == "reset") {
-        converter->document().addComment(SECTION_BINDS, "end of submap");
-        return {};
-    }
-
-    converter->document().addWarning(std::format("submap = {}: binds that followed it need wrapping in hl.define_submap({}, function() ... end)", value, quoteLuaString(NAME)));
-    converter->document().addComment(SECTION_BINDS, std::format("submap {} starts here", NAME));
+    // binds between `submap = name` and `submap = reset` belong to that submap, which the
+    // Lua config expresses as a hl.define_submap block rather than a mode switch
+    converter->setSubmap(NAME == "reset" ? "" : NAME, std::string{DATA[1]});
     return {};
 }
 

@@ -14,7 +14,7 @@
 #include "config/shared/complex/ComplexDataTypes.hpp"
 #include "config/shared/parserUtils/ParserUtils.hpp"
 
-#include "DeviceValues.gen.hpp"
+#include "SpecialValues.gen.hpp"
 
 using namespace H2L;
 using namespace Hyprutils::String;
@@ -349,9 +349,9 @@ void CConverter::registerDeviceCategory() {
         const std::string NAME{name};
 
         switch (type) {
-            case DEVICE_VALUE_INT: m_config->addSpecialConfigValue("device", NAME.c_str(), Hyprlang::INT{0}); break;
-            case DEVICE_VALUE_FLOAT: m_config->addSpecialConfigValue("device", NAME.c_str(), Hyprlang::FLOAT{0.F}); break;
-            case DEVICE_VALUE_STRING: m_config->addSpecialConfigValue("device", NAME.c_str(), Hyprlang::STRING{STRVAL_EMPTY}); break;
+            case SPECIAL_VALUE_INT: m_config->addSpecialConfigValue("device", NAME.c_str(), Hyprlang::INT{0}); break;
+            case SPECIAL_VALUE_FLOAT: m_config->addSpecialConfigValue("device", NAME.c_str(), Hyprlang::FLOAT{0.F}); break;
+            case SPECIAL_VALUE_STRING: m_config->addSpecialConfigValue("device", NAME.c_str(), Hyprlang::STRING{STRVAL_EMPTY}); break;
         }
     }
 }
@@ -361,6 +361,41 @@ void CConverter::registerHandlers() {
     registerRuleHandlers();
     registerBindHandlers();
     registerMonitorHandlers();
+}
+
+void CConverter::addBind(const std::string& statement) {
+    if (m_currentSubmap.empty()) {
+        m_document.addStatement(SECTION_BINDS, statement);
+        return;
+    }
+
+    m_submapBinds.back().second.emplace_back(statement);
+}
+
+void CConverter::setSubmap(const std::string& name, const std::string& reset) {
+    m_currentSubmap = name;
+
+    if (name.empty())
+        return;
+
+    if (!reset.empty())
+        m_document.addWarning(std::format("submap = {}, {}: the reset mode is not carried over", name, reset));
+
+    m_submapBinds.emplace_back(name, std::vector<std::string>{});
+}
+
+void CConverter::emitSubmaps() {
+    for (const auto& [name, binds] : m_submapBinds) {
+        if (binds.empty())
+            continue;
+
+        std::string lua = std::format("hl.define_submap({}, function()\n", quoteLuaString(name));
+        for (const auto& b : binds)
+            lua += std::format("    {}\n", b);
+        lua += "end)";
+
+        m_document.addStatement(SECTION_BINDS, lua);
+    }
 }
 
 void CConverter::addStartupExec(const std::string& command) {
@@ -403,9 +438,9 @@ void CConverter::emitDevices() {
                 continue;
 
             switch (type) {
-                case DEVICE_VALUE_INT: device->set(FIELD, CLuaValue::integer(std::any_cast<Hyprlang::INT>(PTR->getValue()))); break;
-                case DEVICE_VALUE_FLOAT: device->set(FIELD, CLuaValue::number(static_cast<double>(std::any_cast<Hyprlang::FLOAT>(PTR->getValue())))); break;
-                case DEVICE_VALUE_STRING: device->set(FIELD, CLuaValue::string(std::any_cast<Hyprlang::STRING>(PTR->getValue()))); break;
+                case SPECIAL_VALUE_INT: device->set(FIELD, CLuaValue::integer(std::any_cast<Hyprlang::INT>(PTR->getValue()))); break;
+                case SPECIAL_VALUE_FLOAT: device->set(FIELD, CLuaValue::number(static_cast<double>(std::any_cast<Hyprlang::FLOAT>(PTR->getValue())))); break;
+                case SPECIAL_VALUE_STRING: device->set(FIELD, CLuaValue::string(std::any_cast<Hyprlang::STRING>(PTR->getValue()))); break;
             }
         }
 
@@ -432,6 +467,8 @@ bool CConverter::convert(const std::string& path) {
     emitDevices();
     emitExecs();
     emitRuleBlocks();
+    emitMonitorBlocks();
+    emitSubmaps();
 
     return m_errors.empty();
 }
