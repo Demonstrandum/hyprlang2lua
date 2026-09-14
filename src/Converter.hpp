@@ -56,6 +56,7 @@ namespace H2L {
         void registerKeywordHandlers();
         void registerRuleHandlers();
         void registerBindHandlers();
+        void registerMonitorHandlers();
 
       private:
         void registerOptions();

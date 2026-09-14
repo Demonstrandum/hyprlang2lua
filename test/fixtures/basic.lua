@@ -1,3 +1,16 @@
+------------------
+---- MONITORS ----
+------------------
+hl.monitor({
+    output = "DP-1",
+    mode = "2560x1440@144",
+    position = "0x0",
+    scale = "1",
+    vrr = 1,
+    bitdepth = 10,
+})
+hl.monitor({ output = "HDMI-A-1", disabled = true })
+
 -------------------
 ---- AUTOSTART ----
 -------------------
@@ -47,6 +60,12 @@ hl.curve("easeOutQuint", { points = { {0.23, 1}, {0.32, 1} }, type = "bezier" })
 hl.animation({ leaf = "windows", enabled = true, speed = 4.79, bezier = "easeOutQuint" })
 hl.animation({ leaf = "fade", enabled = false })
 
+-------------------------
+---- WORKSPACE RULES ----
+-------------------------
+hl.workspace_rule({ workspace = "1", monitor = "DP-1", default = true })
+hl.workspace_rule({ workspace = "special:magic", gaps_in = 0, no_border = true, on_created_empty = "kitty" })
+
 ----------------------
 ---- WINDOW RULES ----
 ----------------------
@@ -58,6 +77,11 @@ hl.window_rule({ opacity = 0.9, match = { title = "^(.*Firefox.*)$" } })
 ---- LAYER RULES ----
 ---------------------
 hl.layer_rule({ blur = true, match = { namespace = "^(waybar)$" } })
+
+-----------------
+---- DEVICES ----
+-----------------
+hl.device({ name = "epic-mouse-v1", sensitivity = -0.5, natural_scroll = 1 })
 
 -----------------
 ---- PLUGINS ----

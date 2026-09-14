@@ -360,6 +360,7 @@ void CConverter::registerHandlers() {
     registerKeywordHandlers();
     registerRuleHandlers();
     registerBindHandlers();
+    registerMonitorHandlers();
 }
 
 void CConverter::addStartupExec(const std::string& command) {
@@ -388,7 +389,28 @@ void CConverter::emitExecs() {
 }
 
 void CConverter::emitDevices() {
-    ;
+    // `device { name = ..., ... }` is a hyprlang special category: one instance per key,
+    // read back here as the hl.device{} call that says the same thing
+    for (const auto& DEVICE : m_config->listKeysForSpecialCategory("device")) {
+        auto              device = CLuaValue::table();
+        device->set("name", CLuaValue::string(DEVICE));
+
+        for (const auto& [name, type] : DEVICE_VALUES) {
+            const std::string FIELD{name};
+            const auto        PTR = m_config->getSpecialConfigValuePtr("device", FIELD.c_str(), DEVICE.c_str());
+
+            if (!PTR || !PTR->m_bSetByUser)
+                continue;
+
+            switch (type) {
+                case DEVICE_VALUE_INT: device->set(FIELD, CLuaValue::integer(std::any_cast<Hyprlang::INT>(PTR->getValue()))); break;
+                case DEVICE_VALUE_FLOAT: device->set(FIELD, CLuaValue::number(static_cast<double>(std::any_cast<Hyprlang::FLOAT>(PTR->getValue())))); break;
+                case DEVICE_VALUE_STRING: device->set(FIELD, CLuaValue::string(std::any_cast<Hyprlang::STRING>(PTR->getValue()))); break;
+            }
+        }
+
+        m_document.addStatement(SECTION_DEVICES, std::format("hl.device({})", device->render()));
+    }
 }
 
 bool CConverter::convert(const std::string& path) {
