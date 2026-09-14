@@ -69,11 +69,6 @@ static Hyprlang::CParseResult handleMonitor(const char*, const char* value) {
 
     const auto ARGS = CVarList2(std::string{value});
 
-    if (ARGS[0].empty()) {
-        result.setError("monitor: no output given");
-        return result;
-    }
-
     auto monitor = CLuaValue::table();
     monitor->set("output", CLuaValue::string(std::string{ARGS[0]}));
 

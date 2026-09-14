@@ -431,6 +431,7 @@ bool CConverter::convert(const std::string& path) {
     emitOptions();
     emitDevices();
     emitExecs();
+    emitRuleBlocks();
 
     return m_errors.empty();
 }

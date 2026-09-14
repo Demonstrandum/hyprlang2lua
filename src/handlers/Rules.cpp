@@ -23,6 +23,8 @@ using namespace Hyprutils::String;
 
 namespace {
     // rule values arrive as text; the Lua side takes the natural type for each
+    PLuaValue ruleValue(std::string_view raw);
+
     PLuaValue ruleValue(std::string_view raw) {
         const auto VALUE = trim(std::string{raw});
 
@@ -105,4 +107,67 @@ static Hyprlang::CParseResult handleLayerrule(const char*, const char* value) {
 void CConverter::registerRuleHandlers() {
     m_config->registerHandler(&::handleWindowrule, "windowrule", {false});
     m_config->registerHandler(&::handleLayerrule, "layerrule", {false});
+
+    // rules also have a block form: `windowrule { name = x, match:class = y, float = true }`,
+    // a special category keyed by name whose keys are the same effect and match vocabulary
+    const auto CATEGORY = [this](const char* category, std::span<const std::string_view> effects) {
+        m_config->addSpecialCategory(category, {.key = "name"});
+        m_config->addSpecialConfigValue(category, "enable", Hyprlang::INT{1});
+
+        for (const auto& prop : RULE_MATCH_PROPS) {
+            const auto KEY = std::format("match:{}", prop);
+            m_config->addSpecialConfigValue(category, KEY.c_str(), Hyprlang::STRING{""});
+        }
+
+        for (const auto& effect : effects) {
+            const std::string KEY{effect};
+            m_config->addSpecialConfigValue(category, KEY.c_str(), Hyprlang::STRING{""});
+        }
+    };
+
+    CATEGORY("windowrule", WINDOW_RULE_EFFECTS);
+    CATEGORY("layerrule", LAYER_RULE_EFFECTS);
+}
+
+void CConverter::emitRuleBlocks() {
+    const auto EMIT = [this](const char* category, std::span<const std::string_view> effects, std::string_view fn, eSection section) {
+        for (const auto& NAME : m_config->listKeysForSpecialCategory(category)) {
+            auto rule  = CLuaValue::table();
+            auto match = CLuaValue::table();
+
+            rule->set("name", CLuaValue::string(NAME));
+
+            const auto ENABLED = m_config->getSpecialConfigValuePtr(category, "enable", NAME.c_str());
+            if (ENABLED && ENABLED->m_bSetByUser)
+                rule->set("enabled", CLuaValue::boolean(std::any_cast<Hyprlang::INT>(ENABLED->getValue()) != 0));
+
+            for (const auto& prop : RULE_MATCH_PROPS) {
+                const auto KEY = std::format("match:{}", prop);
+                const auto PTR = m_config->getSpecialConfigValuePtr(category, KEY.c_str(), NAME.c_str());
+
+                if (!PTR || !PTR->m_bSetByUser)
+                    continue;
+
+                match->set(prop, ruleValue(std::any_cast<Hyprlang::STRING>(PTR->getValue())));
+            }
+
+            for (const auto& effect : effects) {
+                const std::string KEY{effect};
+                const auto        PTR = m_config->getSpecialConfigValuePtr(category, KEY.c_str(), NAME.c_str());
+
+                if (!PTR || !PTR->m_bSetByUser)
+                    continue;
+
+                rule->set(KEY, ruleValue(std::any_cast<Hyprlang::STRING>(PTR->getValue())));
+            }
+
+            if (!match->empty())
+                rule->set("match", match);
+
+            m_document.addStatement(section, std::format("{}({})", fn, rule->render()));
+        }
+    };
+
+    EMIT("windowrule", WINDOW_RULE_EFFECTS, "hl.window_rule", SECTION_WINDOW_RULES);
+    EMIT("layerrule", LAYER_RULE_EFFECTS, "hl.layer_rule", SECTION_LAYER_RULES);
 }
