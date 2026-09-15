@@ -1,0 +1,59 @@
+name: hyprland accepts the output
+
+# The claim this project makes is that its output is a config the current Hyprland takes.
+# That is checked here against the Hyprland a user would actually have: the package from
+# Arch's own repository, running `Hyprland --verify-config`, which parses a config and
+# exits without needing a seat or a display.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Hyprland moves; a weekly run says whether the converter still targets the current one
+    - cron: "0 6 * * 1"
+
+jobs:
+  arch:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-x86_64-${{ hashFiles('flake.lock', 'flake.nix') }}
+          restore-prefixes-first-match: nix-x86_64-
+          gc-max-store-size-linux: 2G
+
+      - name: build the converter
+        run: |
+          nix develop .#static --command bash -c '
+            STATIC=1 PKGS="hyprlang hyprutils" OUT=build/hyprlang2lua ./tools/build.sh
+          '
+          file build/hyprlang2lua
+
+      - name: run it against Arch's hyprland package
+        run: |
+          docker run --rm -v "$PWD:/w" -w /w archlinux:latest bash -c '
+            set -e
+            pacman -Syu --noconfirm --needed hyprland diffutils > /dev/null
+            echo "arch package: $(pacman -Q hyprland)"
+            ./tools/verify-with-hyprland.sh
+          '
+
+      - name: report the version it was checked against
+        if: always()
+        run: |
+          docker run --rm archlinux:latest bash -c '
+            pacman -Sy > /dev/null 2>&1
+            pacman -Si hyprland | grep -E "^(Name|Version|Repository)"
+          '
