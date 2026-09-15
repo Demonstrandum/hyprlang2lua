@@ -17,6 +17,44 @@
         deps = with pkgs; [ hyprlang hyprutils hyprgraphics pixman libdrm wayland wayland-protocols libxkbcommon ];
 
         nativeDeps = with pkgs; [ pkg-config cmake ];
+
+        # The release artefacts: one file, no nix store paths, no shared library hunt on
+        # the user's machine.
+        #
+        # hyprlang and hyprutils both hardcode add_library(... SHARED ...), so
+        # BUILD_SHARED_LIBS has nothing to switch off and the target is rewritten instead.
+        # staticShellFor takes a package set so that the x86_64 artefact can be built by a
+        # cross toolchain running natively rather than by an emulated one.
+        staticShellFor = base:
+          let
+            asStatic = drv: name:
+              drv.overrideAttrs (old: {
+                postPatch = (old.postPatch or "") + ''
+                  substituteInPlace CMakeLists.txt \
+                    --replace-fail "add_library(${name} SHARED" "add_library(${name} STATIC"
+                '';
+              });
+
+            static = base.pkgsStatic.extend (final: prev: {
+              hyprutils = asStatic prev.hyprutils "hyprutils";
+              hyprlang = asStatic prev.hyprlang "hyprlang";
+            });
+          in
+          (pkgs.mkShell.override { stdenv = static.hyprlang.stdenv; }) {
+            # luajit and binutils are for tools/test.sh and the strip in tools/release.sh,
+            # which run inside this shell; qemu runs the foreign-architecture binary so a
+            # cross-built artefact is still tested rather than assumed
+            packages = with pkgs; [ pkg-config luajit binutils qemu ];
+            buildInputs = [ static.hyprlang static.hyprutils static.wayland static.libxkbcommon ];
+
+            # hyprgraphics is needed for its headers only: Hyprland's Color.hpp includes
+            # them, and src/Color.cpp replaces the implementation that would link the
+            # library (see the comment there).
+            shellHook = ''
+              export HYPRGRAPHICS_INCLUDE=${pkgs.hyprgraphics.dev}/include
+            '';
+          };
+
       in
       {
         packages.default = pkgs.hyprlang.stdenv.mkDerivation {
@@ -58,81 +96,9 @@
           '';
         };
 
-        # The release artefacts: one file, no nix store paths, no shared library hunt on
-        # the user's machine. hyprlang and hyprutils only ship a shared library by default,
-        # so the static set builds them with BUILD_SHARED_LIBS off.
-        packages.static =
-          let
-            # both projects hardcode add_library(... SHARED ...), so BUILD_SHARED_LIBS has
-            # nothing to switch off and the target has to be rewritten
-            asStatic = drv: name:
-              drv.overrideAttrs (old: {
-                postPatch = (old.postPatch or "") + ''
-                  substituteInPlace CMakeLists.txt \
-                    --replace-fail "add_library(${name} SHARED" "add_library(${name} STATIC"
-                '';
-              });
-
-            static = pkgs.pkgsStatic.extend (final: prev: {
-              hyprutils = asStatic prev.hyprutils "hyprutils";
-              hyprlang = asStatic prev.hyprlang "hyprlang";
-            });
-          in
-          static.hyprlang.stdenv.mkDerivation {
-            # note: `nix build .#static` needs the submodules in the flake source, i.e.
-            # `nix build "git+file://$PWD?submodules=1#static"`. tools/release.sh builds
-            # through devShells.static instead, which sees the working tree directly.
-            pname = "hyprlang2lua-static";
-            version = "0.1.0"; # keep in step with VERSION
-            src = ./.;
-
-            nativeBuildInputs = [ pkgs.pkg-config ];
-            buildInputs = [ static.hyprlang static.hyprutils static.wayland static.libxkbcommon ];
-
-            buildPhase = ''
-              runHook preBuild
-              export HYPRGRAPHICS_INCLUDE=${pkgs.hyprgraphics.dev}/include
-              STATIC=1 PKGS="hyprlang hyprutils" ./tools/build.sh
-              runHook postBuild
-            '';
-
-            installPhase = ''
-              runHook preInstall
-              install -Dm755 build/hyprlang2lua $out/bin/hyprlang2lua
-              runHook postInstall
-            '';
-
-            meta.mainProgram = "hyprlang2lua";
-          };
-
-        # the same toolchain and libraries as packages.static, for building from the
-        # working tree (submodules included) rather than from a flake source copy
-        devShells.static =
-          let
-            static = pkgs.pkgsStatic.extend (final: prev: {
-              hyprutils = prev.hyprutils.overrideAttrs (old: {
-                postPatch = (old.postPatch or "") + ''
-                  substituteInPlace CMakeLists.txt --replace-fail "add_library(hyprutils SHARED" "add_library(hyprutils STATIC"
-                '';
-              });
-              hyprlang = prev.hyprlang.overrideAttrs (old: {
-                postPatch = (old.postPatch or "") + ''
-                  substituteInPlace CMakeLists.txt --replace-fail "add_library(hyprlang SHARED" "add_library(hyprlang STATIC"
-                '';
-              });
-            });
-          in
-          (pkgs.mkShell.override { stdenv = static.hyprlang.stdenv; }) {
-            packages = [ pkgs.pkg-config ];
-            buildInputs = [ static.hyprlang static.hyprutils static.wayland static.libxkbcommon ];
-
-            # hyprgraphics is needed for its headers only: Hyprland's Color.hpp includes
-            # them, and src/Color.cpp replaces the implementation that would link the
-            # library (see the comment there).
-            shellHook = ''
-              export HYPRGRAPHICS_INCLUDE=${pkgs.hyprgraphics.dev}/include
-            '';
-          };
+        devShells.static = staticShellFor pkgs;
+        devShells.static-x86_64 = staticShellFor pkgs.pkgsCross.musl64;
+        devShells.static-aarch64 = staticShellFor pkgs.pkgsCross.aarch64-multiplatform-musl;
 
         checks.default = self.packages.${system}.default;
       });

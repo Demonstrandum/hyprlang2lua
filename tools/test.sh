@@ -13,7 +13,10 @@ set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+# BIN may carry a runner prefix, e.g. BIN="qemu-x86_64 build/hyprlang2lua-x86_64"
 BIN="${BIN:-build/hyprlang2lua}"
+read -r -a BIN_CMD <<< "$BIN"
+BIN_PATH="${BIN_CMD[-1]}"
 HYPRLAND="third_party/hyprland/src"
 status=0
 pass=0
@@ -22,7 +25,7 @@ say() { printf '%s\n' "$*"; }
 ok() { pass=$((pass + 1)); printf '  ok   %s\n' "$1"; }
 fail() { status=1; printf '  FAIL %s\n' "$1"; }
 
-[[ -x "$BIN" ]] || { say "test: $BIN not built"; exit 1; }
+[[ -x "$BIN_PATH" ]] || { say "test: $BIN_PATH not built"; exit 1; }
 
 # ---------------------------------------------------------------- 1, 2: convert and parse
 
@@ -31,7 +34,7 @@ say "converting fixtures"
 for conf in test/fixtures/*.conf; do
     lua="${conf%.conf}.lua"
 
-    if ! "$BIN" "$conf" > /tmp/out.lua 2>/tmp/out.err; then
+    if ! "${BIN_CMD[@]}" "$conf" > /tmp/out.lua 2>/tmp/out.err; then
         # a converter that reports unconvertible input still exits non-zero; that is fine
         # as long as it produced output
         [[ -s /tmp/out.lua ]] || { fail "$conf produced no output"; continue; }

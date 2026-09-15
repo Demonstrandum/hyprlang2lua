@@ -12,16 +12,18 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 BIN="${BIN:-build/hyprlang2lua}"
+read -r -a BIN_CMD <<< "$BIN"
+BIN_PATH="${BIN_CMD[-1]}"
 check=false
 [[ "${1:-}" == "--check" ]] && check=true
 
-[[ -x "$BIN" ]] || { echo "gen_fixtures: $BIN not built" >&2; exit 1; }
+[[ -x "$BIN_PATH" ]] || { echo "gen_fixtures: $BIN_PATH not built" >&2; exit 1; }
 
 status=0
 
 for conf in test/fixtures/*.conf; do
     lua="${conf%.conf}.lua"
-    actual="$("$BIN" "$conf" 2>/dev/null || true)"
+    actual="$("${BIN_CMD[@]}" "$conf" 2>/dev/null || true)"
 
     if $check; then
         if ! diff -u "$lua" <(printf '%s' "$actual") > /dev/null 2>&1; then
