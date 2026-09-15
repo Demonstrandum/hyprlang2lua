@@ -22,8 +22,21 @@ STATIC="${STATIC:-0}"
 CFLAGS="$(pkg-config --cflags $PKGS)"
 LDFLAGS="$(pkg-config --libs $PKGS)"
 
+# size-oriented flags for the release artefact: optimise for size, give the linker
+# per-function sections to throw away, and let LTO drop what nothing calls
+OPTFLAGS="${OPTFLAGS:-}"
+if [[ -z "$OPTFLAGS" ]]; then
+    if [[ "${STATIC:-0}" == "1" ]]; then
+        OPTFLAGS="-Os -flto=auto -ffunction-sections -fdata-sections"
+    else
+        OPTFLAGS="-O2"
+    fi
+fi
+
+EXTRA_CXXFLAGS="${EXTRA_CXXFLAGS:-}"
+
 if [[ "$STATIC" == "1" ]]; then
-    LDFLAGS="-static $LDFLAGS"
+    LDFLAGS="-static -Wl,--gc-sections -Wl,--as-needed -s $LDFLAGS"
     # the vendored headers reach for wayland and xkbcommon declarations even though this
     # program talks to neither, so their include paths are still needed
     CFLAGS="$CFLAGS $(pkg-config --cflags wayland-server xkbcommon 2>/dev/null || true)"
@@ -69,19 +82,19 @@ objects=()
 for f in "${REUSED[@]}"; do
     obj="build/obj/reused_$(echo "$f" | tr '/.' '__').o"
     # shellcheck disable=SC2086
-    $CXX -std=c++26 -O2 -c "$f" -o "$obj" -Ibuild/gen -I"$LEGACY" $CFLAGS
+    $CXX -std=c++26 $OPTFLAGS $EXTRA_CXXFLAGS -c "$f" -o "$obj" -Ibuild/gen -I"$LEGACY" $CFLAGS
     objects+=("$obj")
 done
 
 for f in "${OWN[@]}"; do
     obj="build/obj/own_$(basename "$f" .cpp).o"
     # shellcheck disable=SC2086
-    $CXX -std=c++26 -O2 -c "$f" -o "$obj" "${WARNINGS[@]}" -Ibuild/gen -isystem "$LEGACY" $CFLAGS
+    $CXX -std=c++26 $OPTFLAGS $EXTRA_CXXFLAGS -c "$f" -o "$obj" "${WARNINGS[@]}" -Ibuild/gen -isystem "$LEGACY" $CFLAGS
     objects+=("$obj")
 done
 
 # shellcheck disable=SC2086
-$CXX -std=c++26 -O2 -o "$OUT" "${objects[@]}" $LDFLAGS
+$CXX -std=c++26 $OPTFLAGS $EXTRA_CXXFLAGS -o "$OUT" "${objects[@]}" $LDFLAGS
 
 # a static build runs in the nix sandbox, where regenerating fixtures would write into
 # the source tree; the dev build keeps them current instead

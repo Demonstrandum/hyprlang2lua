@@ -1,5 +1,5 @@
+#include <cstdio>
 #include <filesystem>
-#include <fstream>
 #include <print>
 #include <span>
 #include <string>
@@ -107,12 +107,17 @@ int main(int argc, char** argv) {
         std::print("{}", LUA);
     else {
         std::println(stderr, "hyprlang2lua: writing {}", output);
-        std::ofstream file(output, std::ios::trunc);
-        if (!file.good()) {
+        // std::ofstream would pull the whole iostreams machinery into a static binary
+        // for one write; the file is already a single string by this point
+        FILE* file = std::fopen(output.c_str(), "w");
+
+        if (!file) {
             std::println(stderr, "hyprlang2lua: cannot write {}", output);
             return 1;
         }
-        file << LUA;
+
+        std::print(file, "{}", LUA);
+        std::fclose(file);
     }
 
     for (const auto& e : converter.errors())

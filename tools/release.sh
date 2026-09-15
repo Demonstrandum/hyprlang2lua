@@ -42,8 +42,12 @@ build_for() {
         set -e
         nix develop .#$shell --command bash -c '
             STATIC=1 PKGS=\"hyprlang hyprutils\" OUT=$bin ./tools/build.sh
-            \$STRIP $bin 2>/dev/null || strip $bin
             BIN=\"$qemu $bin\" ./tools/test.sh
+            echo \"    unpacked: \$(stat -c %s $bin) bytes\"
+            upx --best --lzma -q $bin > /dev/null
+            echo \"    packed:   \$(stat -c %s $bin) bytes\"
+            # the packed binary has to pass the same suite, since packing rewrites it
+            BIN=\"$qemu $bin\" ./tools/test.sh > /dev/null && echo \"    packed binary passes the test suite\"
         '
     "
 

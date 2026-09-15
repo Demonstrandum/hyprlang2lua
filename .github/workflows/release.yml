@@ -1,0 +1,97 @@
+name: release
+
+# Builds each release binary on a runner of its own architecture, so nothing about the
+# artefact depends on emulation, and runs the full test suite against both the unpacked
+# and the packed executable before either is published.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: build
+        run: |
+          nix develop .#static --command bash -c '
+            STATIC=1 PKGS="hyprlang hyprutils" OUT=build/hyprlang2lua-${{ matrix.arch }} ./tools/build.sh
+          '
+
+      - name: test the unpacked binary
+        run: |
+          nix develop .#static --command bash -c '
+            BIN=build/hyprlang2lua-${{ matrix.arch }} ./tools/test.sh
+          '
+          ls -l build/hyprlang2lua-${{ matrix.arch }}
+
+      - name: pack
+        run: |
+          nix develop .#static --command upx --best --lzma -q build/hyprlang2lua-${{ matrix.arch }}
+          ls -l build/hyprlang2lua-${{ matrix.arch }}
+
+      - name: test the packed binary
+        run: |
+          nix develop .#static --command bash -c '
+            BIN=build/hyprlang2lua-${{ matrix.arch }} ./tools/test.sh
+          '
+
+      - name: run it outside nix, on a stock image
+        run: |
+          docker run --rm -v "$PWD:/w" -w /w debian:12-slim \
+            ./build/hyprlang2lua-${{ matrix.arch }} test/fixtures/upstream-example.conf \
+            | diff -u test/fixtures/upstream-example.lua - && echo "matches the committed output"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hyprlang2lua-${{ matrix.arch }}-linux
+          path: build/hyprlang2lua-${{ matrix.arch }}
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: name the files after the tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          for arch in x86_64 aarch64; do
+            install -m755 "artifacts/hyprlang2lua-$arch-linux/hyprlang2lua-$arch" \
+              "dist/hyprlang2lua-$VERSION-$arch-linux"
+          done
+          sha256sum dist/*
+
+      - name: upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber

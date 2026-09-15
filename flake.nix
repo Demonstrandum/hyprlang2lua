@@ -44,7 +44,7 @@
             # luajit and binutils are for tools/test.sh and the strip in tools/release.sh,
             # which run inside this shell; qemu runs the foreign-architecture binary so a
             # cross-built artefact is still tested rather than assumed
-            packages = with pkgs; [ pkg-config luajit binutils qemu ];
+            packages = with pkgs; [ pkg-config luajit binutils qemu upx ];
             buildInputs = [ static.hyprlang static.hyprutils static.wayland static.libxkbcommon ];
 
             # hyprgraphics is needed for its headers only: Hyprland's Color.hpp includes
