@@ -14,9 +14,21 @@ CXX="${CXX:-g++}"
 LEGACY="third_party/hyprland-legacy/src"
 OUT="${OUT:-build/hyprlang2lua}"
 
-PKGS="hyprlang hyprutils hyprgraphics pixman-1 wayland-server xkbcommon"
+# STATIC=1 links everything into one file for release; the default dynamic build takes
+# its libraries from the nix store, which is what the devShell wants.
+PKGS="${PKGS:-hyprlang hyprutils hyprgraphics pixman-1 wayland-server xkbcommon}"
+STATIC="${STATIC:-0}"
+
 CFLAGS="$(pkg-config --cflags $PKGS)"
 LDFLAGS="$(pkg-config --libs $PKGS)"
+
+if [[ "$STATIC" == "1" ]]; then
+    LDFLAGS="-static $LDFLAGS"
+    # the vendored headers reach for wayland and xkbcommon declarations even though this
+    # program talks to neither, so their include paths are still needed
+    CFLAGS="$CFLAGS $(pkg-config --cflags wayland-server xkbcommon 2>/dev/null || true)"
+    [[ -n "${HYPRGRAPHICS_INCLUDE:-}" ]] && CFLAGS="$CFLAGS -isystem $HYPRGRAPHICS_INCLUDE"
+fi
 
 WARNINGS=(
     -Wall
@@ -47,7 +59,6 @@ REUSED=(
     "$LEGACY"/config/values/ConfigValues.cpp
     "$LEGACY"/config/values/types/*.cpp
     "$LEGACY"/config/shared/parserUtils/ParserUtils.cpp
-    "$LEGACY"/helpers/Color.cpp
     "$LEGACY"/helpers/env/Env.cpp
 )
 
@@ -72,6 +83,10 @@ done
 # shellcheck disable=SC2086
 $CXX -std=c++26 -O2 -o "$OUT" "${objects[@]}" $LDFLAGS
 
-./tools/gen_fixtures.sh > /dev/null
+# a static build runs in the nix sandbox, where regenerating fixtures would write into
+# the source tree; the dev build keeps them current instead
+if [[ "$STATIC" != "1" ]]; then
+    ./tools/gen_fixtures.sh > /dev/null
+fi
 
 echo "built $OUT"
