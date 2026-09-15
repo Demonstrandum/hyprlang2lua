@@ -1,0 +1,8 @@
+# One platform: the host, configured by whichever nix shell buck2 runs in. The rule is
+# defined here rather than taken from a prelude because this build has exactly one.
+load("@prelude//platform.bzl", "host_platform")
+
+host_platform(
+    name = "default",
+    visibility = ["PUBLIC"],
+)

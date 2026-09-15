@@ -1,0 +1,13 @@
+# The C++ toolchain, taken from whichever nix shell buck2 was started in.
+#
+# nix already decides the compiler, the flags and the library paths: devShells.default for
+# a dynamic build, devShells.static for a release one. Restating any of that here would
+# give buck2 a second opinion that could disagree with the shell it runs in, so the
+# toolchain reads the environment nix set up and nothing else.
+
+load("@prelude//toolchain.bzl", "cxx_toolchain_from_env")
+
+cxx_toolchain_from_env(
+    name = "cxx",
+    visibility = ["PUBLIC"],
+)

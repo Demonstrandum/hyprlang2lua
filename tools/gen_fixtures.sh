@@ -23,18 +23,20 @@ status=0
 
 for conf in test/fixtures/*.conf; do
     lua="${conf%.conf}.lua"
-    actual="$("${BIN_CMD[@]}" "$conf" 2>/dev/null || true)"
+    # written through a file rather than a variable: command substitution eats trailing
+    # newlines, which made the committed copy differ from the program's own output
+    "${BIN_CMD[@]}" "$conf" > /tmp/gen_fixtures.out 2>/dev/null || true
 
     if $check; then
-        if ! diff -u "$lua" <(printf '%s' "$actual") > /dev/null 2>&1; then
+        if ! diff -u "$lua" /tmp/gen_fixtures.out > /dev/null 2>&1; then
             echo "gen_fixtures: $lua is stale" >&2
-            diff -u "$lua" <(printf '%s' "$actual") || true
+            diff -u "$lua" /tmp/gen_fixtures.out || true
             status=1
         fi
         continue
     fi
 
-    printf '%s' "$actual" > "$lua"
+    cp /tmp/gen_fixtures.out "$lua"
     echo "wrote $lua"
 done
 

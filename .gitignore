@@ -2,3 +2,5 @@ dist/
 build/
 result
 .direnv/
+buck-out/
+.buckd/

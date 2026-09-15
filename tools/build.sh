@@ -61,9 +61,29 @@ WARNINGS=(
     -Werror
 )
 
+mkdir -p build
+
+# buck2 owns the compile graph: which sources exist, which flags each group gets, and
+# which generated header has to be built first. This script only works out what nix has
+# made available and hands that to it.
+if [[ "${BUCK:-1}" == "1" ]] && command -v buck2 > /dev/null; then
+    buck2 build //:hyprlang2lua \
+        -c cxx.compiler="$CXX" \
+        -c cxx.flags="-std=c++26 $OPTFLAGS $EXTRA_CXXFLAGS $CFLAGS" \
+        -c cxx.ldflags="$LDFLAGS" \
+        --out "$OUT" > /dev/null
+
+    if [[ "$STATIC" != "1" ]]; then
+        ./tools/gen_fixtures.sh > /dev/null
+    fi
+
+    echo "built $OUT"
+    exit 0
+fi
+
+# fallback: the same compile without buck2, for an environment that has no daemon
 mkdir -p build/gen build/obj
 
-# generated tables, derived from the pinned submodules
 ./tools/gen_special_values.sh "$LEGACY/config/legacy/ConfigManager.cpp" build/gen/SpecialValues.gen.hpp
 ./tools/gen_rule_names.sh third_party/hyprland/src build/gen/RuleNames.gen.hpp
 

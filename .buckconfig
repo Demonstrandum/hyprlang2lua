@@ -1,0 +1,16 @@
+[cells]
+root = .
+prelude = build-rules/prelude
+toolchains = build-rules/toolchains
+
+[cell_aliases]
+config = prelude
+fbcode = prelude
+fbsource = prelude
+buck = prelude
+
+[parser]
+target_platform_detector_spec = target:root//...->prelude//platforms:default
+
+[build]
+execution_platforms = prelude//platforms:default
