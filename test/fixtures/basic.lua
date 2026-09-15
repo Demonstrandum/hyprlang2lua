@@ -102,4 +102,4 @@ hl.bind("SUPER + T", hl.dsp.exec_cmd("kitty"), { description = "open terminal" }
 
 -- hyprlang2lua could not convert the following faithfully:
 --   bind = SUPER, X, somethingremoved, arg: dispatcher "somethingremoved" has no known Lua equivalent
---   Config error in file /work/test/fixtures/basic.conf at line 25: config option <misc:vfr> does not exist.
+--   Config error in file test/fixtures/basic.conf at line 25: config option <misc:vfr> does not exist.

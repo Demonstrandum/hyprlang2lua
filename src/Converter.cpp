@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <format>
 #include <ranges>
 
@@ -151,9 +152,17 @@ const std::vector<SConvertError>& CConverter::errors() const {
 }
 
 void CConverter::error(const std::string& message) {
-    m_errors.emplace_back(SConvertError{.file = m_path, .line = 0, .message = message});
+    // hyprlang reports the absolute path it resolved, which would put the machine that ran
+    // the conversion into the converted config; the path the user typed is what belongs there
+    auto       text     = message;
+    const auto ABSOLUTE = std::filesystem::absolute(m_path).string();
+
+    for (auto at = text.find(ABSOLUTE); at != std::string::npos; at = text.find(ABSOLUTE, at + m_path.size()))
+        text.replace(at, ABSOLUTE.size(), m_path);
+
+    m_errors.emplace_back(SConvertError{.file = m_path, .line = 0, .message = text});
     // the same note goes into the output, so a converted config carries its own caveats
-    m_document.addWarning(message);
+    m_document.addWarning(text);
 }
 
 void CConverter::registerOptions() {

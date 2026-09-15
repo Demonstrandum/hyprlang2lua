@@ -32,6 +32,23 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
+      # the static musl toolchain and the patched hyprlang/hyprutils are not in
+      # cache.nixos.org, so without this every run rebuilds them from source. The key
+      # covers the inputs that decide the closure; a partial restore still saves the
+      # dependency builds.
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ matrix.arch }}-${{ hashFiles('flake.lock', 'flake.nix') }}
+          restore-prefixes-first-match: nix-${{ matrix.arch }}-
+          gc-max-store-size-linux: 2G
+          purge: true
+          purge-prefixes: nix-${{ matrix.arch }}-
+          purge-created: 0
+          purge-primary-key: never
+
+      - name: warm the shell
+        run: nix develop .#static --command true
+
       - name: build
         run: |
           nix develop .#static --command bash -c '
