@@ -61,3 +61,45 @@ jobs:
             pacman -Sy > /dev/null 2>&1
             pacman -Si hyprland | grep -E "^(Name|Version|Repository)"
           '
+
+  aur:
+    # The packaging is checked the way a user would meet it: makepkg builds the PKGBUILD
+    # on Arch, pacman installs the result, and the installed binary converts a config that
+    # Arch's own hyprland then accepts.
+    runs-on: ubuntu-24.04
+    needs: arch
+
+    strategy:
+      fail-fast: false
+      matrix:
+        pkgbuild: [PKGBUILD, hyprlang2lua-bin.PKGBUILD]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: makepkg, install, convert, verify
+        run: |
+          docker run --rm -v "$PWD:/src:ro" archlinux:latest bash -c '
+            set -e
+            pacman -Syu --noconfirm --needed base-devel git hyprland > /dev/null
+            useradd --create-home build
+            install -o build -m 644 /src/packaging/aur/${{ matrix.pkgbuild }} /home/build/PKGBUILD
+            cd /home/build
+
+            echo "==> makepkg"
+            su build -c "makepkg --noconfirm --syncdeps --clean"
+
+            echo "==> pacman -U"
+            pacman -U --noconfirm /home/build/*.pkg.tar.zst
+
+            echo "==> installed:"
+            pacman -Qi hyprlang2lua hyprlang2lua-bin 2>/dev/null | grep -E "^(Name|Version|Installed Size)" || true
+            command -v hyprlang2lua
+
+            echo "==> convert and verify"
+            install -d -o build -m 700 /tmp/xdg
+            cp /src/test/fixtures/upstream-example.conf /home/build/
+            chown build /home/build/upstream-example.conf
+            su build -c "cd /home/build && hyprlang2lua upstream-example.conf -o out.lua && XDG_RUNTIME_DIR=/tmp/xdg Hyprland --verify-config -c /home/build/out.lua"
+            echo "==> the packaged binary produced a config this Hyprland accepts"
+          '
