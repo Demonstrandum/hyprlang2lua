@@ -312,7 +312,8 @@ namespace {
                  return std::format("hl.dsp.window.alter_zorder({{ mode = {}, window = {} }})", q(ARGS[0]), q(ARGS[1]));
              }},
             {"forcerendererreload", [](const std::string&) { return std::string{"hl.dsp.force_renderer_reload()"}; }},
-            {"forceidle", [](const std::string&) { return std::string{"hl.dsp.force_idle()"}; }},
+            // both sides take a duration; the legacy side defaults it to 0 when omitted
+            {"forceidle", [](const std::string& a) { return std::format("hl.dsp.force_idle({})", a.empty() || !isNumber(a, true) ? "0" : a); }},
             {"releaseinputcapture", [](const std::string&) { return std::string{"hl.dsp.release_input_capture()"}; }},
             {"movecursortocorner", [](const std::string& a) { return std::format("hl.dsp.cursor.move_to_corner({{ corner = {} }})", a.empty() ? "0" : a); }},
             {"movecursor", [](const std::string& a) { return xyCall("hl.dsp.cursor.move", a, false); }},
