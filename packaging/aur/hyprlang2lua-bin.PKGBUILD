@@ -10,6 +10,9 @@ pkgdesc="Converts legacy Hyprland hyprlang (.conf) configs to the Lua config for
 arch=('x86_64' 'aarch64')
 url="https://github.com/Demonstrandum/hyprlang2lua"
 license=('BSD-3-Clause')
+# the binary is already stripped and UPX-packed, so makepkg must not try to strip it
+# again or build a debug package from it
+options=('!strip' '!debug')
 provides=("$_pkgname")
 conflicts=("$_pkgname")
 source_x86_64=("$_pkgname-$pkgver-x86_64::$url/releases/download/v$pkgver/$_pkgname-$pkgver-x86_64-linux")
