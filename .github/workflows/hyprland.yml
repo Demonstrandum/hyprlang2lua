@@ -81,8 +81,10 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/src:ro" archlinux:latest bash -c '
             set -e
-            pacman -Syu --noconfirm --needed base-devel git hyprland > /dev/null
+            pacman -Syu --noconfirm --needed base-devel git hyprland sudo > /dev/null
             useradd --create-home build
+            # makepkg installs missing dependencies through sudo, and refuses to run as root
+            echo "build ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/build
             install -o build -m 644 /src/packaging/aur/${{ matrix.pkgbuild }} /home/build/PKGBUILD
             cd /home/build
 
