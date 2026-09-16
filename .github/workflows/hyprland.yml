@@ -72,7 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pkgbuild: [PKGBUILD, hyprlang2lua-bin.PKGBUILD]
+        pkgbuild: [PKGBUILD, hyprlang-to-lua-bin.PKGBUILD]
 
     steps:
       - uses: actions/checkout@v4
@@ -95,13 +95,13 @@ jobs:
             pacman -U --noconfirm /home/build/*.pkg.tar.zst
 
             echo "==> installed:"
-            pacman -Qi hyprlang2lua hyprlang2lua-bin 2>/dev/null | grep -E "^(Name|Version|Installed Size)" || true
-            command -v hyprlang2lua
+            pacman -Qi hyprlang-to-lua hyprlang-to-lua-bin 2>/dev/null | grep -E "^(Name|Version|Installed Size)" || true
+            command -v hyprlang-to-lua
 
             echo "==> convert and verify"
             install -d -o build -m 700 /tmp/xdg
             cp /src/test/fixtures/upstream-example.conf /home/build/
             chown build /home/build/upstream-example.conf
-            su build -c "cd /home/build && hyprlang2lua upstream-example.conf -o out.lua && XDG_RUNTIME_DIR=/tmp/xdg Hyprland --verify-config -c /home/build/out.lua"
+            su build -c "cd /home/build && hyprlang-to-lua upstream-example.conf -o out.lua && XDG_RUNTIME_DIR=/tmp/xdg Hyprland --verify-config -c /home/build/out.lua"
             echo "==> the packaged binary produced a config this Hyprland accepts"
           '
