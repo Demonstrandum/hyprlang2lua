@@ -7,8 +7,15 @@ converts a legacy hyprland `.conf` into the lua config format.
 grab a binary from the releases page. they are statically linked, so there is nothing else to install.
 
 ```sh
-curl -LO https://github.com/Demonstrandum/hyprlang2lua/releases/latest/download/hyprlang2lua-0.1.1-x86_64-linux
-chmod +x hyprlang2lua-0.1.1-x86_64-linux
+curl -LO https://github.com/Demonstrandum/hyprlang2lua/releases/latest/download/hyprlang2lua-0.1.2-x86_64-linux
+chmod +x hyprlang2lua-0.1.2-x86_64-linux
+```
+
+on arch, from the AUR:
+
+```sh
+yay -S hyprlang2lua-bin      # the static release binary
+yay -S hyprlang2lua          # built from source
 ```
 
 to build instead, with nix:

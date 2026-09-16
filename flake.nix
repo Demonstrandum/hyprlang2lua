@@ -59,7 +59,7 @@
       {
         packages.default = pkgs.hyprlang.stdenv.mkDerivation {
           pname = "hyprlang2lua";
-          version = "0.1.1"; # keep in step with VERSION
+          version = "0.1.2"; # keep in step with VERSION
           src = ./.;
 
           nativeBuildInputs = nativeDeps;

@@ -1,0 +1,38 @@
+# Maintainer: Samuel Knutsen <aur@knutsen.co>
+pkgname=hyprlang2lua
+pkgver=0.1.2
+pkgrel=1
+pkgdesc="Converts legacy Hyprland hyprlang (.conf) configs to the Lua config format"
+arch=('x86_64' 'aarch64')
+url="https://github.com/Demonstrandum/hyprlang2lua"
+license=('BSD-3-Clause')
+depends=('hyprlang' 'hyprutils' 'hyprgraphics' 'gcc-libs')
+makedepends=('git' 'pkgconf' 'wayland' 'libxkbcommon' 'pixman')
+checkdepends=('luajit' 'hyprland')
+source=("git+$url.git#tag=v$pkgver")
+sha256sums=('SKIP')
+
+prepare() {
+    cd "$pkgname"
+    # the converter reads Hyprland's own sources for its option table and rule
+    # vocabulary, pinned as submodules; see SOURCES.md
+    git submodule update --init --recursive --depth 1
+}
+
+build() {
+    cd "$pkgname"
+    BUCK=0 OPTFLAGS="$CXXFLAGS" ./tools/build.sh
+}
+
+check() {
+    cd "$pkgname"
+    ./tools/test.sh
+}
+
+package() {
+    cd "$pkgname"
+    install -Dm755 build/hyprlang2lua "$pkgdir/usr/bin/hyprlang2lua"
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+    install -Dm644 SOURCES.md "$pkgdir/usr/share/doc/$pkgname/SOURCES.md"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
