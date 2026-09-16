@@ -47,7 +47,11 @@ jobs:
             set -e
             pacman -Syu --noconfirm --needed hyprland diffutils > /dev/null
             echo "arch package: $(pacman -Q hyprland)"
-            ./tools/verify-with-hyprland.sh
+            # Hyprland refuses to run with superuser privileges and --verify-config takes
+            # the same path, so the check runs as an ordinary user, like a real one would
+            useradd --create-home check
+            install -d -o check -m 700 /tmp/xdg
+            su check -c "XDG_RUNTIME_DIR=/tmp/xdg ./tools/verify-with-hyprland.sh"
           '
 
       - name: report the version it was checked against
