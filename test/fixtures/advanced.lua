@@ -22,7 +22,7 @@ hl.gesture({ fingers = 3, direction = "pinchin", action = "close", disable_inhib
 ---------------------
 hl.bind("SUPER + R", hl.dsp.submap("resize"))
 hl.define_submap("resize", function()
-    hl.bind("right", hl.dsp.window.resize({ delta = "10 0" }))
-    hl.bind("left", hl.dsp.window.resize({ delta = "-10 0" }))
+    hl.bind("right", hl.dsp.window.resize({ x = 10, y = 0, relative = true }))
+    hl.bind("left", hl.dsp.window.resize({ x = -10, y = 0, relative = true }))
     hl.bind("escape", hl.dsp.submap("reset"))
 end)

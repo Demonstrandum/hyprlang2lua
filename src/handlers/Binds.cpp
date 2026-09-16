@@ -168,14 +168,32 @@ namespace {
         return std::nullopt;
     }
 
+    // "10 0" or "10,0" -> x and y fields, which is how every pixel-taking dispatcher
+    // states its argument on the Lua side
+    std::optional<std::string> xyCall(std::string_view fn, const std::string& args, bool relative, std::string_view tail = "") {
+        const auto PARTS = CVarList2(args, 0, args.contains(',') ? ',' : ' ');
+
+        if (PARTS.size() < 2)
+            return std::nullopt;
+
+        const auto X = trim(std::string{PARTS[0]});
+        const auto Y = trim(std::string{PARTS[1]});
+
+        // exact / percentage forms like "10%" are not numbers on the Lua side
+        if (!isNumber(X, true) || !isNumber(Y, true))
+            return std::nullopt;
+
+        return std::format("{}({{ x = {}, y = {}{}{} }})", fn, X, Y, relative ? ", relative = true" : "", tail);
+    }
+
     const std::vector<std::pair<std::string, DispatchFn>>& dispatchers() {
         static const std::vector<std::pair<std::string, DispatchFn>> MAP = {
             {"exec", [](const std::string& a) { return std::format("hl.dsp.exec_cmd({})", q(a)); }},
             {"execr", [](const std::string& a) { return std::format("hl.dsp.exec_raw({})", q(a)); }},
             {"killactive", [](const std::string&) { return std::string{"hl.dsp.window.close()"}; }},
-            {"closewindow", [](const std::string& a) { return std::format("hl.dsp.window.close({})", a.empty() ? "" : q(a)); }},
+            {"closewindow", [](const std::string& a) { return a.empty() ? std::string{"hl.dsp.window.close()"} : std::format("hl.dsp.window.close({{ window = {} }})", q(a)); }},
             {"forcekillactive", [](const std::string&) { return std::string{"hl.dsp.window.kill()"}; }},
-            {"killwindow", [](const std::string& a) { return std::format("hl.dsp.window.kill({})", a.empty() ? "" : q(a)); }},
+            {"killwindow", [](const std::string& a) { return a.empty() ? std::string{"hl.dsp.window.kill()"} : std::format("hl.dsp.window.kill({{ window = {} }})", q(a)); }},
             {"exit", [](const std::string&) { return std::string{"hl.dsp.exit()"}; }},
             {"togglefloating", [](const std::string&) { return std::string{R"(hl.dsp.window.float({ action = "toggle" }))"}; }},
             {"setfloating", [](const std::string&) { return std::string{R"(hl.dsp.window.float({ action = "set" }))"}; }},
@@ -185,21 +203,49 @@ namespace {
             {"centerwindow", [](const std::string&) { return std::string{"hl.dsp.window.center()"}; }},
             {"bringactivetotop", [](const std::string&) { return std::string{"hl.dsp.window.bring_to_top()"}; }},
             {"toggleswallow", [](const std::string&) { return std::string{"hl.dsp.window.toggle_swallow()"}; }},
-            {"tagwindow", [](const std::string& a) { return std::format("hl.dsp.window.tag({})", q(a)); }},
-            {"cyclenext", [](const std::string& a) { return std::format("hl.dsp.window.cycle_next({})", a.empty() ? "" : q(a)); }},
+            {"tagwindow", [](const std::string& a) { return std::format("hl.dsp.window.tag({{ tag = {} }})", q(a)); }},
+            {"cyclenext",
+             [](const std::string& a) {
+                 std::string fields;
+                 if (a.contains("prev"))
+                     fields += " next = false,";
+                 if (a.contains("tiled"))
+                     fields += " tiled = true,";
+                 if (a.contains("floating"))
+                     fields += " floating = true,";
+                 return fields.empty() ? std::string{"hl.dsp.window.cycle_next()"} : std::format("hl.dsp.window.cycle_next({{{} }})", fields.substr(0, fields.size() - 1));
+             }},
             {"workspace", [](const std::string& a) { return std::format("hl.dsp.focus({{ workspace = {} }})", q(a)); }},
-            {"focusworkspaceoncurrentmonitor", [](const std::string& a) { return std::format("hl.dsp.focus({{ workspace = {}, current_monitor = true }})", q(a)); }},
+            {"focusworkspaceoncurrentmonitor", [](const std::string& a) { return std::format("hl.dsp.focus({{ workspace = {}, on_current_monitor = true }})", q(a)); }},
             {"movetoworkspace", [](const std::string& a) { return std::format("hl.dsp.window.move({{ workspace = {} }})", q(a)); }},
             {"movetoworkspacesilent", [](const std::string& a) { return std::format("hl.dsp.window.move({{ workspace = {}, follow = false }})", q(a)); }},
             {"togglespecialworkspace", [](const std::string& a) { return std::format("hl.dsp.workspace.toggle_special({})", a.empty() ? q("special") : q(a)); }},
-            {"renameworkspace", [](const std::string& a) { return std::format("hl.dsp.workspace.rename({})", q(a)); }},
-            {"swapactiveworkspaces", [](const std::string& a) { return std::format("hl.dsp.workspace.swap_monitors({})", q(a)); }},
+            {"renameworkspace",
+             [](const std::string& a) {
+                 const auto ARGS = CVarList(a, 2, ' ');
+                 if (ARGS[1].empty())
+                     return std::format("hl.dsp.workspace.rename({{ workspace = {} }})", q(ARGS[0]));
+                 return std::format("hl.dsp.workspace.rename({{ workspace = {}, name = {} }})", q(ARGS[0]), q(ARGS[1]));
+             }},
+            {"swapactiveworkspaces",
+             [](const std::string& a) {
+                 const auto ARGS = CVarList(a, 2, ' ');
+                 if (ARGS[1].empty())
+                     return std::optional<std::string>{};
+                 return std::optional<std::string>{std::format("hl.dsp.workspace.swap_monitors({{ monitor1 = {}, monitor2 = {} }})", q(ARGS[0]), q(ARGS[1]))};
+             }},
             {"movecurrentworkspacetomonitor", [](const std::string& a) { return std::format("hl.dsp.workspace.move({{ monitor = {} }})", q(a)); }},
-            {"moveworkspacetomonitor", [](const std::string& a) { return std::format("hl.dsp.workspace.move({{ target = {} }})", q(a)); }},
+            {"moveworkspacetomonitor",
+             [](const std::string& a) {
+                 const auto ARGS = CVarList(a, 2, ' ');
+                 if (ARGS[1].empty())
+                     return std::optional<std::string>{};
+                 return std::optional<std::string>{std::format("hl.dsp.workspace.move({{ workspace = {}, monitor = {} }})", q(ARGS[0]), q(ARGS[1]))};
+             }},
             {"focusmonitor", [](const std::string& a) { return std::format("hl.dsp.focus({{ monitor = {} }})", q(a)); }},
             {"focuswindow", [](const std::string& a) { return std::format("hl.dsp.focus({{ window = {} }})", q(a)); }},
             {"focusurgentorlast", [](const std::string&) { return std::string{R"(hl.dsp.focus({ urgent_or_last = true }))"}; }},
-            {"focuscurrentorlast", [](const std::string&) { return std::string{R"(hl.dsp.focus({ current_or_last = true }))"}; }},
+            {"focuscurrentorlast", [](const std::string&) { return std::string{R"(hl.dsp.focus({ last = true }))"}; }},
             {"movefocus", [](const std::string& a) { return directionCall("hl.dsp.focus", a, "direction"); }},
             {"movewindow", [](const std::string& a) { return directionCall("hl.dsp.window.move", a, "direction"); }},
             {"movewindoworgroup", [](const std::string& a) { return directionCall("hl.dsp.window.move", a, "direction"); }},
@@ -208,37 +254,105 @@ namespace {
             {"moveintoorcreategroup", [](const std::string& a) { return directionCall("hl.dsp.window.move", a, "into_or_create_group"); }},
             {"moveoutofgroup", [](const std::string&) { return std::string{"hl.dsp.window.move({ out_of_group = true })"}; }},
             {"togglegroup", [](const std::string&) { return std::string{"hl.dsp.group.toggle()"}; }},
-            {"lockgroups", [](const std::string& a) { return std::format("hl.dsp.group.lock({})", q(a)); }},
-            {"lockactivegroup", [](const std::string& a) { return std::format("hl.dsp.group.lock_active({})", q(a)); }},
-            {"denywindowfromgroup", [](const std::string& a) { return std::format("hl.dsp.window.deny_from_group({})", q(a)); }},
+            // both take a toggle action: lock, unlock or toggle
+            {"lockgroups", [](const std::string& a) { return std::format("hl.dsp.group.lock({{ action = {} }})", q(a.empty() ? "toggle" : a)); }},
+            {"lockactivegroup", [](const std::string& a) { return std::format("hl.dsp.group.lock_active({{ action = {} }})", q(a.empty() ? "toggle" : a)); }},
+            {"denywindowfromgroup", [](const std::string& a) { return std::format("hl.dsp.window.deny_from_group({{ action = {} }})", q(a.empty() ? "toggle" : a)); }},
             {"changegroupactive", [](const std::string& a) { return a == "b" || a == "prev" ? std::string{"hl.dsp.group.prev()"} : std::string{"hl.dsp.group.next()"}; }},
-            {"movegroupwindow", [](const std::string& a) { return std::format("hl.dsp.group.move_window({})", a == "b" ? "true" : "false"); }},
+            {"movegroupwindow", [](const std::string& a) { return std::format("hl.dsp.group.move_window({{ forward = {} }})", a == "b" ? "false" : "true"); }},
             {"submap", [](const std::string& a) { return std::format("hl.dsp.submap({})", q(a)); }},
-            {"pass", [](const std::string& a) { return std::format("hl.dsp.pass({})", q(a)); }},
-            {"sendshortcut", [](const std::string& a) { return std::format("hl.dsp.send_shortcut({})", q(a)); }},
-            {"sendkeystate", [](const std::string& a) { return std::format("hl.dsp.send_key_state({})", q(a)); }},
+            {"pass", [](const std::string& a) { return std::format("hl.dsp.pass({{ window = {} }})", q(a)); }},
+            // MODS, KEY[, window] on the legacy side; named fields on the Lua side
+            {"sendshortcut",
+             [](const std::string& a) {
+                 const auto ARGS = CVarList(a, 3);
+                 if (ARGS[1].empty())
+                     return std::optional<std::string>{};
+                 auto call = std::format("hl.dsp.send_shortcut({{ mods = {}, key = {}", q(ARGS[0]), q(ARGS[1]));
+                 if (!ARGS[2].empty())
+                     call += std::format(", window = {}", q(ARGS[2]));
+                 return std::optional<std::string>{call + " })"};
+             }},
+            {"sendkeystate",
+             [](const std::string& a) {
+                 const auto ARGS = CVarList(a, 4);
+                 if (ARGS[2].empty())
+                     return std::optional<std::string>{};
+                 auto call = std::format("hl.dsp.send_key_state({{ mods = {}, key = {}, state = {}", q(ARGS[0]), q(ARGS[1]), q(ARGS[2]));
+                 if (!ARGS[3].empty())
+                     call += std::format(", window = {}", q(ARGS[3]));
+                 return std::optional<std::string>{call + " })"};
+             }},
             {"layoutmsg", [](const std::string& a) { return std::format("hl.dsp.layout({})", q(a)); }},
-            {"dpms", [](const std::string& a) { return std::format("hl.dsp.dpms({})", q(a)); }},
+            {"dpms",
+             [](const std::string& a) {
+                 const auto ARGS   = CVarList(a, 2, ' ');
+                 const auto ACTION = ARGS[0].empty() ? "toggle" : ARGS[0];
+                 if (ARGS[1].empty())
+                     return std::format("hl.dsp.dpms({{ action = {} }})", q(ACTION));
+                 return std::format("hl.dsp.dpms({{ action = {}, monitor = {} }})", q(ACTION), q(ARGS[1]));
+             }},
             {"event", [](const std::string& a) { return std::format("hl.dsp.event({})", q(a)); }},
             {"global", [](const std::string& a) { return std::format("hl.dsp.global({})", q(a)); }},
-            {"setprop", [](const std::string& a) { return std::format("hl.dsp.window.set_prop({})", q(a)); }},
-            {"alterzorder", [](const std::string& a) { return std::format("hl.dsp.window.alter_zorder({})", q(a)); }},
+            // "<window>,<prop> <value>" on the legacy side
+            {"setprop",
+             [](const std::string& a) {
+                 const auto ARGS = CVarList(a, 2);
+                 const auto REST = CVarList2(std::string{ARGS[1]}, 2, ' ');
+                 if (REST[0].empty())
+                     return std::optional<std::string>{};
+                 return std::optional<std::string>{
+                     std::format("hl.dsp.window.set_prop({{ window = {}, prop = {}, value = {} }})", q(ARGS[0]), q(std::string{REST[0]}), q(std::string{REST[1]}))};
+             }},
+            {"alterzorder",
+             [](const std::string& a) {
+                 const auto ARGS = CVarList(a, 2);
+                 if (ARGS[1].empty())
+                     return std::format("hl.dsp.window.alter_zorder({{ mode = {} }})", q(ARGS[0]));
+                 return std::format("hl.dsp.window.alter_zorder({{ mode = {}, window = {} }})", q(ARGS[0]), q(ARGS[1]));
+             }},
             {"forcerendererreload", [](const std::string&) { return std::string{"hl.dsp.force_renderer_reload()"}; }},
             {"forceidle", [](const std::string&) { return std::string{"hl.dsp.force_idle()"}; }},
             {"releaseinputcapture", [](const std::string&) { return std::string{"hl.dsp.release_input_capture()"}; }},
-            {"movecursortocorner", [](const std::string& a) { return std::format("hl.dsp.cursor.move_to_corner({})", a.empty() ? "0" : a); }},
-            {"movecursor", [](const std::string& a) { return std::format("hl.dsp.cursor.move({})", q(a)); }},
-            {"signalwindow", [](const std::string& a) { return std::format("hl.dsp.window.signal({})", q(a)); }},
+            {"movecursortocorner", [](const std::string& a) { return std::format("hl.dsp.cursor.move_to_corner({{ corner = {} }})", a.empty() ? "0" : a); }},
+            {"movecursor", [](const std::string& a) { return xyCall("hl.dsp.cursor.move", a, false); }},
+            {"signalwindow",
+             [](const std::string& a) {
+                 const auto COMMA = a.find(',');
+                 if (COMMA == std::string::npos)
+                     return std::format("hl.dsp.window.signal({{ signal = {} }})", q(a));
+                 return std::format("hl.dsp.window.signal({{ window = {}, signal = {} }})", q(trim(a.substr(0, COMMA))), q(trim(a.substr(COMMA + 1))));
+             }},
+            {"signal", [](const std::string& a) { return std::format("hl.dsp.window.signal({{ signal = {} }})", q(a)); }},
             {"mouse", [](const std::string& a) { return a.contains("resizewindow") ? std::string{"hl.dsp.window.resize()"} : std::string{"hl.dsp.window.drag()"}; }},
             {"fullscreen",
              [](const std::string& a) {
                  return std::format(R"(hl.dsp.window.fullscreen({{ mode = "{}" }}))", a == "1" ? "maximized" : "fullscreen");
              }},
-            {"resizeactive", [](const std::string& a) { return std::format("hl.dsp.window.resize({{ delta = {} }})", q(a)); }},
-            {"moveactive", [](const std::string& a) { return std::format("hl.dsp.window.move({{ delta = {} }})", q(a)); }},
-            {"resizewindowpixel", [](const std::string& a) { return std::format("hl.dsp.window.resize({{ pixel = {} }})", q(a)); }},
-            {"movewindowpixel", [](const std::string& a) { return std::format("hl.dsp.window.move({{ pixel = {} }})", q(a)); }},
-            {"swapnext", [](const std::string& a) { return std::format("hl.dsp.window.swap({{ next = {} }})", a == "prev" ? "false" : "true"); }},
+            // fullscreenstate takes the two modes as numbers, in the same order
+            {"fullscreenstate",
+             [](const std::string& a) {
+                 const auto ARGS = CVarList(a, 2, ' ');
+                 const auto INTERNAL = ARGS[0].empty() ? "-1" : ARGS[0];
+                 const auto CLIENT   = ARGS[1].empty() ? "-1" : ARGS[1];
+                 return std::format("hl.dsp.window.fullscreen_state({{ internal = {}, client = {} }})", INTERNAL, CLIENT);
+             }},
+            {"resizeactive", [](const std::string& a) { return xyCall("hl.dsp.window.resize", a, true); }},
+            {"moveactive", [](const std::string& a) { return xyCall("hl.dsp.window.move", a, true); }},
+            // these take "<x> <y>,<window>"; the window selector is the part after the comma
+            {"resizewindowpixel",
+             [](const std::string& a) {
+                 const auto COMMA = a.find(',');
+                 const auto TAIL  = COMMA == std::string::npos ? "" : std::format(", window = {}", q(trim(a.substr(COMMA + 1))));
+                 return xyCall("hl.dsp.window.resize", COMMA == std::string::npos ? a : a.substr(0, COMMA), true, TAIL);
+             }},
+            {"movewindowpixel",
+             [](const std::string& a) {
+                 const auto COMMA = a.find(',');
+                 const auto TAIL  = COMMA == std::string::npos ? "" : std::format(", window = {}", q(trim(a.substr(COMMA + 1))));
+                 return xyCall("hl.dsp.window.move", COMMA == std::string::npos ? a : a.substr(0, COMMA), true, TAIL);
+             }},
+            {"swapnext", [](const std::string& a) { return std::format("hl.dsp.window.swap({{ {} = true }})", a == "prev" ? "prev" : "next"); }},
         };
 
         return MAP;
